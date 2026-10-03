@@ -1,0 +1,48 @@
+name: pqkeystore
+description: >-
+  Post-quantum key management layer for Dart/Flutter.
+  Best-in-class custody for ML-KEM, ML-DSA, SLH-DSA, hybrid, and threshold keys.
+version: 0.1.0-dev.1
+publish_to: 'none' # Remove when ready to publish on pub.dev
+homepage: https://yardenah.com
+repository: https://github.com/turkananation/pqkeystore
+topics:
+  - cryptography
+  - post-quantum
+  - security
+  - key-management
+  - flutter
+
+environment:
+  sdk: '>=3.12.0 <4.0.0'
+  flutter: '>=3.24.0'
+
+dependencies:
+  crypto_shared: ^1.0.0
+  flutter:
+    sdk: flutter
+  meta: ^1.12.0
+  pqforge: ^0.4.6
+  pqthreshold: ^1.0.1
+  swissarmyknife: ^0.1.0
+  zeroize: ^0.1.0
+
+dev_dependencies:
+  flutter_lints: ^5.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.yardenah.pqkeystore
+        pluginClass: PqKeystorePlugin
+      ios:
+        pluginClass: PqKeystorePlugin
+      macos:
+        pluginClass: PqKeystorePlugin
+      windows:
+        pluginClass: PqKeystorePluginCApi
+      linux:
+        pluginClass: PqKeystorePluginCApi
