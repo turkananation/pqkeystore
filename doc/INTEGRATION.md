@@ -1,28 +1,32 @@
 # Integration Guide
 
-`pqkeystore` is a foundational component. This document describes how it interacts with the rest of the Yardenah architecture.
+`pqkeystore` is intended to be a custody component. The integrations below describe package boundaries; they do not imply tested end-to-end interoperability.
 
-### `pqcrypto` / `pqforge`
+## `pqcrypto` / `pqforge`
 
 * **Role**: These provide the actual cryptographic algorithms (post-quantum and classical).
-* **Integration**: `pqkeystore` does NOT implement math. It relies on `pqforge` to provide the implementation for `PqKeystoreCrypto`. When `put` is called, `pqforge` routines are used to derive keys from passphrases, encrypt the payload, and generate the PQKS blob.
+* **Integration**: `pqkeystore` does not implement post-quantum mathematics. `PqForgeKeystoreCrypto` adapts the `pqforge` wrapping API. The adapter exists, but dependency internals and security properties have not been independently audited in this project review.
 
-### `pqthreshold`
+## `pqthreshold`
 
 * **Role**: Manages distributed key generation and threshold signature ceremonies.
-* **Integration**: A single device rarely holds a complete, reconstructed key. Instead, `pqthreshold` generates a *share*. This share is passed to `PqKeystore.putShare`. During a signing event, `pqthreshold` calls `PqKeystore.useShare` to temporarily load the share, perform a partial signature, and immediately discard the share.
+* **Integration**: `pqthreshold` is the expected owner of threshold ceremonies and share mathematics. The current `putShare` checks the metadata kind and that threshold metadata exists; `useShare` delegates to `use`. An end-to-end signing or DKG integration has not been demonstrated, so the methods should be treated as custody helpers only.
 
-### `zeroize`
+## `zeroize`
 
-* **Role**: Ensures sensitive data is overwritten in memory, mitigating cold-boot and memory scraping attacks.
-* **Integration**: `pqkeystore` uses `zeroize` aggressively. Plaintext arguments passed to `put` and the decrypted buffers provided to the `use` callback MUST be passed through `zeroize` immediately after their required lifespan ends.
+* **Role**: Provides secret-buffer utilities used by the facade.
+* **Integration**: `use` copies the unwrap result into `SecretBytes`, passes a separate callback copy, clears that callback buffer in `finally`, and disposes the wrapper. Ownership and disposal semantics for the original unwrap buffer have not been verified. This is not a guarantee against runtime copies, memory dumps, or callback retention.
 
-### `swissarmyknife`
+## `swissarmyknife`
 
-* **Role**: Utility library.
-* **Integration**: `pqkeystore` utilizes the `Result` monad from `swissarmyknife` for functional error handling, replacing try/catch blocks and returning explicit success/failure types.
+* **Role**: A declared package dependency.
+* **Integration**: The current public facade returns local `KsResult<T>`/`KsSuccess<T>`/`KsFailure<T>` types. It does not currently expose `swissarmyknife` `Result`; dependency use or removal should be resolved separately.
 
-### `pqdga` / `pqtransport`
+## `pqdga` / `pqtransport`
 
-* **Role**: Networking and domain generation layers.
-* **Integration**: These packages require keys to operate (e.g., TLS certificates, seed values). They depend on `pqkeystore` to load these keys securely via the `use` callback, establish the connection or state, and then allow the key to be cleared from memory.
+* **Role**: Downstream ecosystem packages that may consume key material.
+* **Integration**: A downstream caller can use `use` as the preferred access path once the public constructor/API blocker is fixed. The caller must not retain or copy callback data unnecessarily; complete memory erasure is not guaranteed.
+
+## Readiness
+
+No end-to-end integration with these ecosystem packages is established by the current package tests. Track provider semantics, threshold interoperability, and the secret lifecycle in [`TRACKER.md`](TRACKER.md) and [ADR-0004](adr/0004-unlock-and-secret-lifecycle.md).

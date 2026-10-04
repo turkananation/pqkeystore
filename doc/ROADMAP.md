@@ -1,41 +1,22 @@
 # Roadmap
 
-This document outlines the planned development phases for `pqkeystore`.
+This roadmap reflects source-audit status, not passing test/build results. The detailed work breakdown and acceptance criteria are in [`TRACKER.md`](TRACKER.md); confirmed defects are in [`BUGS.md`](BUGS.md). All five registered platforms are required for v1 by [ADR-0001](adr/0001-five-platform-v1.md).
 
-## Phase 0.1.0-dev: Scaffold & Structure (Current)
+## Existing Capabilities
 
-* Define interfaces (`PqKeystore`, `Backend`, `Crypto`).
-* Establish strict Agent guidelines and documentation.
-* Implement `MemoryKeystoreBackend` and `FileKeystoreBackend` (basic).
-* Create `StubKeystoreCrypto` for CI structural testing.
-* *Goal: Architecture validated, tests passing, ready for real crypto.*
+- Dart facade, versioned PQKS record codec, canonical AAD generation, memory/file backends, and a `PqForgeKeystoreCrypto` adapter exist.
+- Android has a partial native handler; iOS and macOS have partial Keychain handlers.
+- Linux and Windows plugin sources are stubs.
+- Tests and a verification script exist, but the audit did not run them. No passing baseline is claimed.
 
-## Phase 0.1.0: Cryptographic Integration
+## Production Sequence
 
-* Wire in `pqforge` for AEAD and key derivation.
-* Implement real `PqForgeKeystoreCrypto` replacing the stub.
-* Integrate `zeroize` for memory safety.
-* Integrate `swissarmyknife` `Result` types.
-* *Goal: Secure pure-Dart implementation ready.*
+1. **Restore a usable and verified Dart baseline** (TRK-001, TRK-002): run the declared verification flow on the minimum supported toolchain and fix the public constructor/API mismatch.
+2. **Enforce data and filesystem invariants** (TRK-003, TRK-004): metadata/AAD binding, strict bounded PQKS parsing, collision-safe IDs, safe replacement, and an explicit index threat model.
+3. **Verify crypto and secret lifecycle** (TRK-005): establish provider behavior and buffer ownership/cleanup evidence; define unlock semantics in ADR-0004.
+4. **Make all platform implementations conform** (TRK-006, TRK-007): approve the channel contract, implement Android/iOS/macOS/Windows/Linux, and run shared contract tests/builds.
+5. **Close policy, automation, and release work** (TRK-008 through TRK-012): threshold boundary, CI matrix, accurate docs, package metadata, release candidate, and independent security review.
 
-## Phase 0.2.0: Native Platform Backends
+## Release Policy
 
-* Implement Android MethodChannel (Keystore).
-* Implement iOS/macOS MethodChannel (Keychain).
-* Implement Windows MethodChannel (DPAPI).
-* Implement Linux MethodChannel (Secret Service/XDG).
-* *Goal: Hardware/OS-backed storage operational on all platforms.*
-
-## Phase 0.3.0: Threshold & Ecosystem
-
-* Finalize `putShare` / `useShare` workflows.
-* Integration testing with `pqthreshold`.
-* Cross-platform round-trip testing (ensuring a blob generated on Android can be parsed conceptually, though OS boundaries prevent direct sharing).
-* *Goal: Fully integrated into the Yardenah ecosystem.*
-
-## Phase 1.0.0: Stable Release
-
-* Comprehensive external security audit.
-* Final review against `CLAIM_BOUNDARY.md`.
-* API stabilization.
-* *Goal: Production-ready release.*
+Do not call the package production-ready or publish a stable release until all release gates in [`TRACKER.md`](TRACKER.md) have evidence. Update [`CLAIM_BOUNDARY.md`](CLAIM_BOUNDARY.md) before asserting any newly implemented security property.

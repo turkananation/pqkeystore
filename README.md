@@ -1,18 +1,22 @@
 # pqkeystore
 
-**Post-quantum key management layer for Dart/Flutter.**
+**Key custody and lifecycle primitives for Dart/Flutter.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.1.0--dev.1-orange.svg)](https://github.com/turkananation/pqkeystore/releases)
 
-`pqkeystore` provides best-in-class custody for ML-KEM, ML-DSA, SLH-DSA,
-classical, hybrid, and **threshold** secret key material — with first-class
-support for Android, iOS, macOS, Windows, and Linux.
+`pqkeystore` provides a facade for wrapping, storing, and temporarily using key
+material. It does not implement post-quantum mathematics. Although the package
+registers Android, iOS, macOS, Windows, and Linux, native implementations are
+incomplete; all five remain v1 production gates. See the
+[platform status](doc/PLATFORM.md) and [production tracker](doc/TRACKER.md).
 
 > [!CAUTION]
-> **v0.1.0-dev.1** ships with `StubKeystoreCrypto` which is **NOT SECURE**.
-> It exists solely for structural testing. Production wrap/unwrap requires
-> wiring [`pqforge`](https://github.com/turkananation/pqforge).
+> **This package is not production-ready.** `StubKeystoreCrypto` is **NOT
+> SECURE** and exists for structural testing only. A `PqForgeKeystoreCrypto`
+> adapter is present, but crypto-provider behavior, secret-buffer lifecycle,
+> and native storage have not completed production verification. Do not use the
+> stub for real key material.
 
 ---
 
@@ -29,26 +33,32 @@ support for Android, iOS, macOS, Windows, and Linux.
 │  PqKeystoreCrypto   │   PqKeystoreBackend    │
 │   wrap / unwrap     │  Memory│File│Platform  │
 ├─────────────────────┘────────────────────────┤
-│              OS secure storage               │
-│  Android Keystore · iOS/macOS Keychain       │
-│  Windows DPAPI · Linux libsecret / file      │
+│             Native storage (incomplete)       │
+│     Android · iOS/macOS partial; others stub  │
 └──────────────────────────────────────────────┘
 ```
 
-**Plaintext only exists inside `PqKeystore.use(callback)`**. The OS stores
-already-sealed PQKS blobs — defense in depth.
+`put` accepts plaintext input for wrapping; `use(callback)` is the preferred
+retrieval path. The facade clears its callback buffer in a `finally` block, but
+cannot prevent copies or guarantee complete process-memory erasure. Backend
+protection varies and is not yet production-verified.
 
 ## Key Design Principles
 
 - **Custody only** — no lattice math, no PQC primitives. That's
   [`pqcrypto`](https://github.com/turkananation/pqcrypto).
-- **`use(callback)` API** — plaintext must not escape; buffers are zeroed after
-  the callback returns.
-- **Threshold-first** — store and use individual shares; full reconstruction is
-  high-friction, explicit, and default **off**.
+- **`use(callback)` API** — preferred access path. The facade clears a callback
+  buffer in `finally`; it cannot prevent copies, and complete memory erasure is
+  not verified.
+- **Share custody** — `putShare` checks share kind and presence of threshold
+  metadata. It does not validate share mathematics or a complete ceremony.
 - **Evidence-oriented claims** — see [`doc/CLAIM_BOUNDARY.md`](doc/CLAIM_BOUNDARY.md).
 
 ## Quick Start
+
+The sample below shows the intended call pattern, but is not currently
+compilable from an external package because the public constructor has a named
+argument visibility defect (BUG-001). See [`doc/BUGS.md`](doc/BUGS.md).
 
 ```dart
 import 'package:pqkeystore/pqkeystore.dart';
@@ -73,7 +83,8 @@ await keystore.put(
   PassphraseUnlock(passphrase),
 );
 
-// Use — plaintext zeroed automatically after callback
+// The callback copy is cleared after completion; complete memory erasure is
+// not guaranteed.
 final result = await keystore.use(
   KeyId('my-ml-kem-key'),
   PassphraseUnlock(passphrase),
@@ -101,11 +112,11 @@ final result = await keystore.use(
 
 | Platform | Backend | Mechanism |
 | ---------- | --------- | ----------- |
-| Android | `android-keystore` | AES-GCM in Android Keystore; blobs in SharedPreferences |
-| iOS | `keychain` | Generic password, `ThisDeviceOnly` |
-| macOS | `keychain` | Same as iOS |
-| Windows | `dpapi` | `CryptProtectData` `UI_FORBIDDEN` |
-| Linux | `libsecret` / file | Secret Service or XDG `0600` fallback |
+| Android | Partial native handler; contract mismatch | Not production-ready |
+| iOS | Partial Keychain handler; contract mismatch | Not production-ready |
+| macOS | Partial Keychain handler; contract mismatch | Not production-ready |
+| Windows | Registered stub | Not implemented |
+| Linux | Registered stub | Not implemented |
 
 ## PQKS Binary Format
 
@@ -129,6 +140,9 @@ All sealed records use the PQKS wire format:
 - [`doc/API.md`](doc/API.md) — API reference
 - [`doc/PLATFORM.md`](doc/PLATFORM.md) — Platform support details
 - [`doc/CLAIM_BOUNDARY.md`](doc/CLAIM_BOUNDARY.md) — Security claims & boundaries
+- [`doc/TRACKER.md`](doc/TRACKER.md) — Production readiness work and release gates
+- [`doc/BUGS.md`](doc/BUGS.md) — Confirmed defects from the source audit
+- [ADRs](doc/adr/0001-five-platform-v1.md) — Architecture decisions and open choices
 - [`AGENTS.md`](AGENTS.md) — Agent rules & conventions
 - [`CONTINUE.md`](CONTINUE.md) — Next steps & continuation tasks
 - [`SECURITY.md`](SECURITY.md) — Security policy

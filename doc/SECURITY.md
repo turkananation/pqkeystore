@@ -1,31 +1,31 @@
 # Security Model
 
-The `pqkeystore` security model is designed to mitigate risks in hostile execution environments (e.g., mobile devices, user desktops) by employing a defense-in-depth approach.
+This document describes the threat model to use when evaluating `pqkeystore`; it does not assert that current platform implementations meet it. See [`CLAIM_BOUNDARY.md`](CLAIM_BOUNDARY.md) for current claims and [`TRACKER.md`](TRACKER.md) for release gates.
 
 ## Threat Model
 
 We consider the following adversaries and capabilities:
 
-1. **Passive Storage Access**: An attacker acquires the physical device or a backup of the device's storage.
-    * *Mitigation*: OS-level secure storage (Keychain/Keystore) prevents extraction without device unlocking. The inner PQKS wrap requires a user passphrase, adding a second factor.
-2. **App Compromise (Non-Root)**: Malware on the same device attempts to access the keystore files.
-    * *Mitigation*: OS sandboxing prevents access to other apps' data. DPAPI/Keychain policies prevent unauthorized processes from requesting the data.
+1. **Passive Storage Access**: An attacker acquires stored application data.
+    * *Intended mitigation*: Wrap key material before persistence. Actual protection depends on the selected crypto adapter, unlock mode, and backend; current native support is incomplete.
+2. **App Compromise (Non-Root)**: Malware with access to the app process or its files attempts to read records or plaintext.
+    * *Boundary*: This package does not prevent compromise of the application process. Platform isolation and access-control policies require implementation and verification on each OS.
 3. **Rooted/Jailbroken Device**: An attacker has elevated privileges and can read any file or query the OS keystore directly.
-    * *Mitigation*: The OS layer is bypassed. The attacker obtains the PQKS blob. The inner encryption (AES/Kyber via `pqforge`) bound to a user passphrase is the final line of defense.
+    * *Boundary*: No protection against a compromised OS is claimed. Do not assume a specific algorithm, hardware-backed key, or passphrase flow without verifying the configured adapter and platform.
 4. **Memory Scraping**: An attacker dumps the application's RAM to find keys.
-    * *Mitigation*: The `PqKeystore.use()` API combined with `zeroize` ensures keys exist in plaintext for the absolute minimum time required.
+    * *Boundary*: `use` limits the intended access scope and clears a callback copy, but the caller may retain copies and complete process-memory erasure is not established.
 
 ## Trust Boundaries
 
-* **App <-> Keystore**: The app trusts `pqkeystore` to store and retrieve data faithfully. `pqkeystore` trusts the app not to leak the plaintext buffer provided during the `use()` callback.
+* **App <-> Keystore**: The caller controls key inputs and may copy or retain callback plaintext. The facade does not prevent this.
 * **Keystore <-> Crypto Provider**: `pqkeystore` completely trusts `PqKeystoreCrypto` (e.g., `pqforge`) to execute cryptographic primitives correctly and securely.
-* **Keystore <-> OS**: `pqkeystore` trusts the operating system to enforce its stated security policies (sandboxing, keychain access control).
+* **Keystore <-> OS**: The package intends to rely on native storage policies, but current platform implementations are incomplete and options are not consistently applied.
 
 ## Defense in Depth
 
 Our core philosophy is that no single layer should be relied upon exclusively:
 
-1. **Transient Memory**: Keys are never held in state.
-2. **Inner Cryptography**: The payload is always encrypted by our own code before touching disk.
-3. **Outer Cryptography**: The encrypted payload is handed to the OS for its own storage encryption.
-4. **Threshold Cryptography**: By storing only shares, a complete device compromise only yields a fraction of the key.
+1. **Transient Memory**: `use` is the preferred access pattern; copies and full erasure are not controlled.
+2. **Inner Cryptography**: The crypto adapter is responsible for wrapping; the insecure stub must never be used with real secrets.
+3. **Outer Storage**: Platform storage is a goal, not a verified guarantee across registered targets.
+4. **Threshold Custody**: Share helper APIs exist, but they do not validate share mathematics or prove end-to-end threshold security.

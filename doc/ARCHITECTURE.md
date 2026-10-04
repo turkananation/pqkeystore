@@ -1,6 +1,6 @@
 # Architecture
 
-The `pqkeystore` package is designed with a layered architecture to provide strong security guarantees, modularity, and cross-platform consistency.
+The `pqkeystore` package separates facade policy, crypto wrapping, and backend storage. The Dart structure exists, but native parity and security guarantees are incomplete; see [`CLAIM_BOUNDARY.md`](CLAIM_BOUNDARY.md).
 
 ## Layer Diagram
 
@@ -15,10 +15,10 @@ flowchart TD
     PqKeystoreBackend --> Plat[PlatformBackend]
     
     Plat -.-> MethodChannel((MethodChannel))
-    MethodChannel -.-> Android[Android Keystore]
-    MethodChannel -.-> iOS[iOS/macOS Keychain]
-    MethodChannel -.-> Windows[Windows DPAPI]
-    MethodChannel -.-> Linux[Linux Secret Service]
+    MethodChannel -.-> Android[Android partial]
+    MethodChannel -.-> iOS[iOS/macOS partial]
+    MethodChannel -.-> Windows[Windows stub]
+    MethodChannel -.-> Linux[Linux stub]
 ```
 
 ## Core Components
@@ -29,11 +29,11 @@ The application interacts exclusively with the `PqKeystore` facade. It provides 
 
 ### 2. PqKeystore Facade
 
-This is the orchestrator. When a key is added (`put`), it asks `PqKeystoreCrypto` to wrap the plaintext into a PQKS blob, and then asks `PqKeystoreBackend` to store that blob. When a key is requested (`use`), it retrieves the blob from the backend, unwraps it via crypto, executes the callback, and ensures the plaintext is zeroized.
+This is the orchestrator. `put` asks `PqKeystoreCrypto` to wrap plaintext and then asks `PqKeystoreBackend` to store a `SealedRecord`. `use` retrieves and unwraps the record, calls the supplied body, clears the callback copy in a `finally` block, and disposes the `SecretBytes` wrapper. The original unwrap buffer ownership and complete zeroization are not verified. The constructor's external API is currently blocked by BUG-001.
 
 ### 3. PqKeystoreCrypto (Wrap/Unwrap)
 
-Responsible for the cryptographic binding of the key material. It converts plaintext into the sealed `PQKS` (Post-Quantum Key Store) binary format. This involves encryption and integrity checks (MAC/AEAD), typically relying on the `pqforge` package.
+Responsible for wrapping and unwrapping key material. `PqForgeKeystoreCrypto` adapts the `pqforge` wrapping API; provider security properties have not been independently audited here. `SealedRecord` encodes wrapper parameters and ciphertext in PQKS framing. Parsing alone does not authenticate a record, and retrieval currently lacks a metadata-to-AAD consistency check.
 
 ### 4. PqKeystoreBackend (Storage)
 
@@ -41,21 +41,21 @@ Handles the persistence of the sealed PQKS blobs.
 
 * **Memory**: Transient, used for testing or highly sensitive session keys.
 * **File**: Stores blobs on disk, useful for desktop or pure-Dart environments.
-* **Platform**: Delegates storage to the operating system's native secure enclave or keychain.
+* **Platform**: Delegates to a Flutter method channel. Android and Apple handlers are partial and contract-incompatible; Linux and Windows are stubs.
 
 ## Defense in Depth
 
-The architecture relies on a "Defense in Depth" strategy:
+The intended architecture is layered, but the following are design goals, not verified current guarantees:
 
-1. **Inner Wrap (PQKS)**: The key material is encrypted and authenticated by `PqKeystoreCrypto` before it ever leaves the Dart environment. This binds the key to a passphrase or biometric challenge and provides format integrity.
-2. **Outer Protection (OS)**: The resulting PQKS blob is then handed to the OS via the `PlatformBackend`. The OS applies its own layer of security (e.g., hardware-backed encryption, process isolation, DPAPI).
+1. **Inner wrapping**: A crypto provider is responsible for cryptographic protection. `StubKeystoreCrypto` is insecure. Authentication mode behavior depends on the adapter and is not uniform for every public unlock type.
+2. **Backend storage**: The backend stores encoded records. The native method channel is incomplete across targets. The file backend's unkeyed index checksum is not adversarial authentication.
 
-If the OS storage is compromised, the attacker only obtains the encrypted PQKS blob, which still requires the passphrase/challenge to unwrap.
+Do not infer hardware-backed protection, biometric enforcement, confidentiality under every configured mode, or cross-platform availability from this architecture diagram.
 
 ## Threshold Operations
 
-For threshold cryptography, `pqkeystore` manages individual *shares*, not the full key.
+For threshold cryptography, `pqkeystore` is intended to manage individual *shares*, not perform threshold mathematics.
 
 * One share is stored per device.
-* The ceremony to utilize these shares is managed externally by `pqthreshold`.
-* Full key reconstruction in a single memory space is considered an anti-pattern and defaults to OFF. Use `putShare` and `useShare` to manage partial keys.
+* The ceremony is expected to be managed externally by `pqthreshold`; end-to-end integration is not established.
+* `putShare` checks share kind and threshold metadata presence only. Full key reconstruction is not implemented by these helpers. See [ADR-0005](adr/0005-threshold-share-boundary.md).
