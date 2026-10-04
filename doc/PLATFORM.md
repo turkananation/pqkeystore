@@ -4,16 +4,16 @@
 
 ## MethodChannel Details
 
-*   **Name**: `com.yardenah.pqkeystore/store`
-*   **Methods**:
-    *   `put`: Store a byte array against an ID.
-    *   `get`: Retrieve a byte array by ID.
-    *   `delete`: Remove an ID.
-    *   `contains`: Check if an ID exists.
-    *   `putJson`: Store metadata/indexes (optional, depending on backend impl).
-    *   `getJson`: Retrieve metadata/indexes.
-    *   `platformInfo`: Get OS capabilities.
-*   **Error Codes**: `NOT_FOUND`, `USER_CANCELLED`, `AUTH_FAILED`, `KEYSTORE_ERROR`, `UNSUPPORTED`, `INVALID_ARGS`.
+* **Name**: `com.yardenah.pqkeystore/store`
+* **Methods**:
+  * `put`: Store a byte array against an ID.
+  * `get`: Retrieve a byte array by ID.
+  * `delete`: Remove an ID.
+  * `contains`: Check if an ID exists.
+  * `putJson`: Store metadata/indexes (optional, depending on backend impl).
+  * `getJson`: Retrieve metadata/indexes.
+  * `platformInfo`: Get OS capabilities.
+* **Error Codes**: `NOT_FOUND`, `USER_CANCELLED`, `AUTH_FAILED`, `KEYSTORE_ERROR`, `UNSUPPORTED`, `INVALID_ARGS`.
 
 ## OS-Specific Implementations
 
