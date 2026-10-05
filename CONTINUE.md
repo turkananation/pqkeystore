@@ -1,35 +1,33 @@
-# Next Steps (CONTINUE)
+# Continuation Guide
 
-To resume work on `pqkeystore`, begin by running the verification suite to ensure the baseline is stable:
+[`doc/TRACKER.md`](doc/TRACKER.md) is the source of truth for production work;
+[`doc/BUGS.md`](doc/BUGS.md) lists confirmed defects. Do not start implementation
+work in TRK-003 through TRK-009 until the architecture decisions in TRK-002 are
+reviewed and accepted or explicitly scoped out.
 
-```bash
-cd pqkeystore && flutter pub get && dart analyze && flutter test
-```
+## Latest Verification
 
-## Ordered Continuation Tasks
+On 2026-10-05, `tool/verify.sh` passed with Dart 3.13.4 and Flutter 3.47.5:
+root and example dependency resolution, `dart analyze`, and all 25 tests. This
+does not verify the declared minimum SDK combination, any native build, or a
+production security claim.
 
-The following tasks are prioritized for the next phase of development.
+## Next Sequence
 
-> **[!IMPORTANT]**
-> **Top 3 Immediate Tasks:**
->
-> 1. Wire `pqforge` + `zeroize`; implement real `PqForgeKeystoreCrypto`.
-> 2. Wire `swissarmyknife` `Result` replacing local `KsResult`.
-> 3. Harden `FileKeystoreBackend` + sealed index.
+1. Complete TRK-001 by validating the approved minimum Flutter/Dart combination
+   and recording the supported SDK matrix.
+2. Complete TRK-002 architecture review. In particular, settle native channel
+   atomicity/options, file-backend path/index/recovery/concurrency policy,
+   unlock/KDF/passphrase/memory semantics, threshold boundaries, strict PQKS
+   invariants, PQKS versus pqforge formats, and metadata/ID/key-lifecycle rules.
+3. Only after the decision gate, start core implementation and tests under
+   TRK-003 through TRK-005 and the consumer example work in TRK-013.
+4. Then implement platform parity and CI under TRK-006, TRK-007, and TRK-009.
 
-### Full Task List
+## Format Reminder
 
-1. **Wire `pqforge` + `zeroize`; implement real `PqForgeKeystoreCrypto`**
-    * Replace `StubKeystoreCrypto` with a robust implementation leveraging `pqforge` for AEAD wrapping and `zeroize` for immediate memory clearing of plaintext buffers.
-2. **Wire `swissarmyknife` `Result` replacing local `KsResult`**
-    * Deprecate any local `KsResult` or exception-heavy flows in favor of the standardized functional `Result` type from the `swissarmyknife` package.
-3. **Harden `FileKeystoreBackend` + sealed index**
-    * Ensure the file backend uses atomic writes. Implement a sealed, integrity-checked index so the application knows which keys exist without scanning the filesystem.
-4. **Platform round-trips: Android -> iOS/macOS -> Windows -> Linux**
-    * Implement the native code for the `MethodChannelBackend` on all five supported platforms, ensuring strict parity in method signatures and error codes.
-5. **Threshold validation with `pqthreshold`**
-    * Implement and test the `putShare` and `useShare` workflows. Integrate with `pqthreshold` to validate that shares can be safely utilized without full reconstruction.
-6. **Integration tests on real devices**
-    * Set up a Flutter driver or integration test suite to run against physical iOS and Android devices, as well as desktop runners.
-7. **Security audit before release**
-    * Conduct a thorough review of the code against the `CLAIM_BOUNDARY.md` and `SECURITY.md` models before tagging a 1.0.0 release.
+PQKS is the keystore's persisted record. `PqWrappedKey` is pqforge's
+passphrase-based key wrapper. `.pqf` and `.pqfs` are pqforge recipient-oriented
+one-shot and streaming content envelopes, respectively; neither is currently a
+pqkeystore backend record. See
+[ADR-0007](doc/adr/0007-pqks-and-pqforge-format-boundaries.md).

@@ -5,11 +5,11 @@
 
 ## Context
 
-The file backend maps IDs through sanitization that can collide, removes an existing record before replacement is safely committed, and maintains an index with an unkeyed checksum. The checksum can detect some accidental corruption but cannot authenticate the index against an attacker able to edit it.
+The file backend maps IDs through sanitization that can collide, removes an existing record before replacement is safely committed, and maintains an index with an unkeyed checksum. The checksum can detect some accidental corruption but cannot authenticate the index against an attacker able to edit it. Index entries also contain caller-controlled path strings; `contains` and `list` use those paths without proving they remain under the configured directory. Concurrent writers have no declared serialization contract.
 
 ## Decision
 
-Before calling the file backend production-capable, explicitly choose its attacker model and document that boundary. Regardless of that choice, ID-to-path mapping must be collision-safe and replacement must preserve the previous valid record until the new record is committed. Validate that decoded record identity matches the requested storage identity.
+Before calling the file backend production-capable, explicitly choose its attacker model and document that boundary. Regardless of that choice, ID-to-path mapping must be collision-safe; persisted index data must never select files outside the configured root; replacement must preserve the previous valid record until the new record is committed; and decoded record identity must match the requested storage identity. Define behavior for concurrent operations in one process and across processes, including recovery after a crash between record and index updates.
 
 Treat the current unkeyed checksum as corruption detection only. Do not describe it as a cryptographic seal or adversarial tamper protection. A keyed index-authentication design requires a separately approved key lifecycle and is not assumed by this ADR.
 

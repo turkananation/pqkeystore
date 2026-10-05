@@ -56,15 +56,18 @@ protection varies and is not yet production-verified.
 
 ## Quick Start
 
-The sample below shows the intended call pattern, but is not currently
-compilable from an external package because the public constructor has a named
-argument visibility defect (BUG-001). See [`doc/BUGS.md`](doc/BUGS.md).
+The public constructor accepts `backend:` and `crypto:`. This in-memory sample
+uses test-only bytes; do not substitute production key material or treat this
+snippet as a complete application key-generation/passphrase policy. The example
+app is still simulated; see TRK-013 in [`doc/TRACKER.md`](doc/TRACKER.md).
 
 ```dart
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:pqkeystore/pqkeystore.dart';
 
-// ⚠️ StubKeystoreCrypto is NOT SECURE — structure tests only.
-final crypto = StubKeystoreCrypto();
+final crypto = PqForgeKeystoreCrypto();
 final backend = MemoryKeystoreBackend();
 final keystore = PqKeystore(backend: backend, crypto: crypto);
 
@@ -75,11 +78,12 @@ final metadata = KeyMetadata(
   createdAt: DateTime.now(),
 );
 
-// Store
-final passphrase = Uint8List.fromList(utf8.encode('hunter2'));
+// These bytes and passphrase are for a local demonstration only.
+final passphrase = Uint8List.fromList(utf8.encode('test-only-passphrase'));
+final testKeyMaterial = Uint8List.fromList(List.generate(32, (index) => index));
 await keystore.put(
   metadata,
-  secretKeyBytes,
+  testKeyMaterial,
   PassphraseUnlock(passphrase),
 );
 
@@ -88,10 +92,7 @@ await keystore.put(
 final result = await keystore.use(
   KeyId('my-ml-kem-key'),
   PassphraseUnlock(passphrase),
-  (plaintext) async {
-    // Use the key material here
-    return doSomething(plaintext);
-  },
+  (plaintext) async => plaintext.length,
 );
 ```
 
@@ -106,7 +107,7 @@ final result = await keystore.use(
 | **pqdga** | Deterministic namespace / rendezvous material |
 | **pqtransport** | Transport-layer key management |
 | **zeroize** | Secret lifecycle, multi-pass zeroing, SecretBytes |
-| **swissarmyknife** | Result, StateMachine, validation |
+| **swissarmyknife** | Declared utility dependency; the facade currently exposes local `KsResult` types |
 
 ## Platform Support
 
@@ -132,6 +133,13 @@ All sealed records use the PQKS wire format:
 | nonce | length-prefixed bytes |
 | kdfParams | length-prefixed JSON UTF-8 |
 | ciphertext | length-prefixed bytes |
+
+PQKS is not pqforge's `.pqf` one-shot or `.pqfs` streaming content envelope.
+PQKS stores key metadata and the selected wrapper fields; this package currently
+maps pqforge `PqWrappedKey` fields into PQKS. The content envelopes use a
+recipient-oriented KEM model and are not used as keystore records. See
+[`doc/ARCHITECTURE.md`](doc/ARCHITECTURE.md) and
+[ADR-0007](doc/adr/0007-pqks-and-pqforge-format-boundaries.md).
 
 ## Documentation
 

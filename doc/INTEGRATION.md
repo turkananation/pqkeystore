@@ -7,6 +7,10 @@
 * **Role**: These provide the actual cryptographic algorithms (post-quantum and classical).
 * **Integration**: `pqkeystore` does not implement post-quantum mathematics. `PqForgeKeystoreCrypto` adapts the `pqforge` wrapping API. The adapter exists, but dependency internals and security properties have not been independently audited in this project review.
 
+### Format Boundary
+
+`PqWrappedKey` is pqforge's password-wrapped exported-key value. `PqEnvelope` / `.pqf` is a one-shot recipient-oriented content envelope, and `PqStreamingEnvelope` / `.pqfs` is a framed streaming content envelope. `pqkeystore` persists its own PQKS record and currently maps fields from `PqWrappedKey`; it does not store `.pqf` or `.pqfs` files. These names and formats are not interchangeable. See [ADR-0007](adr/0007-pqks-and-pqforge-format-boundaries.md).
+
 ## `pqthreshold`
 
 * **Role**: Manages distributed key generation and threshold signature ceremonies.

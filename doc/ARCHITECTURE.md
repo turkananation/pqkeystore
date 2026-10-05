@@ -29,11 +29,11 @@ The application interacts exclusively with the `PqKeystore` facade. It provides 
 
 ### 2. PqKeystore Facade
 
-This is the orchestrator. `put` asks `PqKeystoreCrypto` to wrap plaintext and then asks `PqKeystoreBackend` to store a `SealedRecord`. `use` retrieves and unwraps the record, calls the supplied body, clears the callback copy in a `finally` block, and disposes the `SecretBytes` wrapper. The original unwrap buffer ownership and complete zeroization are not verified. The constructor's external API is currently blocked by BUG-001.
+This is the orchestrator. `put` asks `PqKeystoreCrypto` to wrap plaintext and then asks `PqKeystoreBackend` to store a `SealedRecord`. `use` retrieves and unwraps the record, calls the supplied body, clears the callback copy in a `finally` block, and disposes the `SecretBytes` wrapper. The resolved `SecretBytes.fromUint8List` copies its input, so the original unwrap buffer remains caller-owned and is not currently cleared by the facade. The public named constructor is verified by the passing facade tests.
 
 ### 3. PqKeystoreCrypto (Wrap/Unwrap)
 
-Responsible for wrapping and unwrapping key material. `PqForgeKeystoreCrypto` adapts the `pqforge` wrapping API; provider security properties have not been independently audited here. `SealedRecord` encodes wrapper parameters and ciphertext in PQKS framing. Parsing alone does not authenticate a record, and retrieval currently lacks a metadata-to-AAD consistency check.
+Responsible for wrapping and unwrapping key material. `PqForgeKeystoreCrypto` calls pqforge 0.4.6 `wrapKeyWithPassphrase` and maps `PqWrappedKey` fields into `SealedRecord`; it does not serialize a `.pqf` or `.pqfs` content envelope. `SealedRecord` encodes wrapper parameters and ciphertext in PQKS framing. Parsing alone does not authenticate a record, and retrieval currently lacks a metadata-to-AAD consistency check.
 
 ### 4. PqKeystoreBackend (Storage)
 
@@ -51,6 +51,17 @@ The intended architecture is layered, but the following are design goals, not ve
 2. **Backend storage**: The backend stores encoded records. The native method channel is incomplete across targets. The file backend's unkeyed index checksum is not adversarial authentication.
 
 Do not infer hardware-backed protection, biometric enforcement, confidentiality under every configured mode, or cross-platform availability from this architecture diagram.
+
+## Storage Format Boundaries
+
+| Name | Owner and responsibility | Used here |
+| --- | --- | --- |
+| PQKS | `pqkeystore` record framing and metadata for a stored key | Yes; persisted by backends |
+| `PqWrappedKey` | pqforge passphrase-based wrapping of one exported key | Yes; its fields are mapped into PQKS |
+| `PqEnvelope` / `.pqf` | pqforge one-shot, KEM-recipient content encryption | No |
+| `PqStreamingEnvelope` / `.pqfs` | pqforge authenticated streaming content encryption | No |
+
+The formats differ in framing, purpose, and keying model. A filename suffix is not a decoder selector. The exact versioned mapping between the pqforge wrapper and PQKS, plus migration behavior, remains a design decision in [ADR-0007](adr/0007-pqks-and-pqforge-format-boundaries.md). Metadata is currently stored in cleartext; its privacy policy and key lifecycle are open in [ADR-0008](adr/0008-metadata-identity-and-key-lifecycle.md).
 
 ## Threshold Operations
 

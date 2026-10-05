@@ -11,4 +11,4 @@ Welcome to the `pqkeystore` documentation. This directory contains detailed info
 * [**ROADMAP.md**](ROADMAP.md): Project phases, upcoming features, and release planning.
 * [**TRACKER.md**](TRACKER.md): Production-readiness work items, dependencies, acceptance criteria, and release gates.
 * [**BUGS.md**](BUGS.md): Confirmed code defects and verification criteria.
-* [**adr/**](adr/0001-five-platform-v1.md): Architecture decisions, status, and unresolved choices.
+* [**adr/**](adr/0001-five-platform-v1.md): Architecture decisions, including PQKS/pqforge format and key-lifecycle boundaries.

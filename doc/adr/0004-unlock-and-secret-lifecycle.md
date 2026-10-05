@@ -5,16 +5,17 @@
 
 ## Context
 
-The facade rejects `PlatformUnlock` for PQKS v1. `PqForgeKeystoreCrypto` accepts passphrase-based wrapping, but `PassphraseThenPlatform` is currently handled as passphrase-only. `PlatformStoreOptions` are not consistently consumed by native code. The facade clears a callback copy and disposes `SecretBytes`, but the plaintext buffer returned by `unwrap` and dependency ownership semantics require verification.
+The facade rejects `PlatformUnlock` for PQKS v1. `PqForgeKeystoreCrypto` accepts passphrase-based wrapping, but `PassphraseThenPlatform` is currently handled as passphrase-only. `PlatformStoreOptions` are not consistently consumed by native code. In the resolved `zeroize` API, `SecretBytes.fromUint8List` always copies and leaves the caller's buffer owned by the caller; the facade disposes the copy but does not currently clear the original plaintext returned by `unwrap`. Pure Dart also cannot guarantee erasure of garbage-collected copies. The adapter converts passphrase bytes to a Dart `String`, which cannot be explicitly wiped.
 
 ## Decision
 
-Define the meaning of every public unlock type and platform option before advertising platform authentication. Verify crypto-provider and `zeroize` ownership/copy/disposal behavior against dependency source and tests. Document only cleanup guarantees that can be demonstrated; do not promise complete process-memory erasure or OS hardware backing without evidence.
+Define the meaning of every public unlock type and platform option before advertising platform authentication. Specify passphrase byte-to-text encoding, KDF algorithm and cost policy, FIPS/deployment behavior, and what happens when platform authentication is unavailable. Verify crypto-provider and `zeroize` ownership/copy/disposal behavior against the pinned dependency source and tests. Clear every package-owned source buffer when ownership permits; document only cleanup guarantees that can be demonstrated. Do not promise complete process-memory erasure or OS hardware backing.
 
 ## Consequences
 
 - Either implement each advertised unlock flow end-to-end or reject it explicitly with a stable policy error.
-- Test successful use, callback exceptions, unwrap failures, and disposal paths without logging secret bytes.
+- Test successful use, callback exceptions, unwrap failures, and every package-owned buffer cleanup path without logging secret bytes.
+- Pin and enforce safe KDF parameter ranges before invoking a password KDF on untrusted record data.
 - Update claim-boundary and integration docs after behavior is verified.
 
 ## Alternatives Considered
@@ -26,5 +27,7 @@ Define the meaning of every public unlock type and platform option before advert
 ## Open Questions
 
 - Is platform authentication an outer storage access-control policy, an inner unwrap factor, or both?
-- What exact memory-erasure guarantee does `SecretBytes` provide, and can the original unwrap buffer be cleared safely?
-- Which algorithms and KDF parameter ranges are supported by the provider adapter?
+- What exact memory-erasure guarantee can be made when `SecretBytes` copies and Dart creates immutable strings?
+- What passphrase byte encoding is canonical and compatible with `pqforge`'s `String` API?
+- Which KDFs, cost ranges, and deployment/FIPS modes are supported by v1?
+- Does platform storage add an independent encryption layer, a user-presence gate, both, or neither on each OS?

@@ -1,10 +1,14 @@
 # API Reference
 
-This reference describes the API currently exported by `package:pqkeystore/pqkeystore.dart`. It is not a promise that every backend works in production. The constructor currently uses private named parameter identifiers and is not callable by external libraries as intended; see [`BUGS.md`](BUGS.md) BUG-001 and [`TRACKER.md`](TRACKER.md) TRK-002.
+This reference describes the API currently exported by `package:pqkeystore/pqkeystore.dart`. It is not a promise that every backend works in production. Public construction with `PqKeystore(backend: ..., crypto: ...)` compiles and is covered by the facade tests. The example app itself remains simulated; see TRK-013 in [`TRACKER.md`](TRACKER.md).
 
 ## `PqKeystore`
 
-The facade is intended to be constructed from a `PqKeystoreBackend` and `PqKeystoreCrypto`. The constructor visibility defect must be fixed before consumer code can use the intended named-argument form.
+Construct the facade from a `PqKeystoreBackend` and `PqKeystoreCrypto`:
+
+```dart
+final keystore = PqKeystore(backend: backend, crypto: crypto);
+```
 
 ### Operations
 
@@ -50,7 +54,7 @@ Future<KsResult<T>> useShare<T>(
 * `KeyKind` classifies key material.
 * `KeyMetadata` includes `id`, `kind`, `algorithm`, `createdAt`, and optional `purpose`, `version`, `rotatedFrom`, `threshold`, and `tags`.
 * `ThresholdMeta` includes `schemeId`, `t`, `n`, `participantIndex`, `ceremonyId`, and optional `rosterHashHex`.
-* `SealedRecord` is the versioned PQKS record persisted by a backend. Its metadata is not secret; confidentiality and authentication depend on the crypto adapter and backend.
+* `SealedRecord` is the versioned PQKS record persisted by a backend. PQKS serializes metadata in cleartext; deployments should treat purpose, tags, threshold details, and identifiers as potentially sensitive. Backend protection varies.
 
 ## Unlock Types
 
@@ -65,3 +69,16 @@ Failure types include `NotFound`, `PlatformError`, `CryptoError`, `FormatError`,
 ## PQKS Record
 
 The current v1 record contains magic/version framing and length-prefixed wrap algorithm, JSON metadata, AAD, nonce, KDF parameters, and ciphertext. Do not treat parsing as an integrity guarantee. The decoder currently accepts trailing bytes, and metadata-to-AAD consistency is not checked on retrieval; see BUG-005 and BUG-008 in [`BUGS.md`](BUGS.md), and [ADR-0006](adr/0006-pqks-record-invariants.md).
+
+## PQKS And pqforge Envelopes
+
+These formats have different owners and jobs; they are not interchangeable:
+
+| Format | Purpose |
+| --- | --- |
+| PQKS | `pqkeystore`'s versioned persisted record: key metadata plus the selected crypto wrapper's parameters and ciphertext. |
+| `PqWrappedKey` | pqforge's passphrase-wrapped exported key: KDF/AEAD, salt, nonce, ciphertext, and authenticated key identity. `PqForgeKeystoreCrypto` currently maps its fields into PQKS. |
+| `.pqf` / `PqEnvelope` | pqforge's one-shot, recipient-oriented content envelope using KEM-derived encryption. Not used as a keystore record. |
+| `.pqfs` / `PqStreamingEnvelope` | pqforge's framed streaming content envelope for large data. Not used as a keystore record. |
+
+The `.pqf` suffix is not the raw binary magic; the envelope codec uses a length-prefixed `PQF1` field. `.pqfs` uses its own `PQFS` streaming frame. V1 promises no `.pqf`/`.pqfs` import/export interoperability. See [ADR-0007](adr/0007-pqks-and-pqforge-format-boundaries.md).
