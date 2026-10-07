@@ -1,0 +1,203 @@
+# pqkeystore CI — ADR-0001 five-platform gate.
+#
+# A platform counts as supported only when its job builds the plugin AND the
+# shared contract suite (example/integration_test/platform_contract_test.dart)
+# passes against the real native implementation. No job is allowed to
+# silently skip: missing evidence must show up as a red job.
+#
+# Secret hygiene: tests use generated test-only data; no step prints record
+# bytes, and no artifacts are uploaded.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: '3.47.5'
+
+jobs:
+  dart:
+    name: Dart (analyze, unit + reference contract tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: No keystore files committed
+        run: test -z "$(git ls-files '*.pqks')"
+      - run: tool/verify.sh
+
+  linux:
+    name: Linux (libsecret)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Install build and Secret Service dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev libsecret-1-dev \
+            xvfb dbus-x11 gnome-keyring
+      - name: Build
+        working-directory: example
+        run: flutter build linux --debug
+      - name: Native unit tests
+        working-directory: example
+        run: |
+          cmake --build build/linux/x64/debug --target pqkeystore_test
+          build/linux/x64/debug/plugins/pqkeystore/pqkeystore_test
+      - name: Contract suite against gnome-keyring
+        working-directory: example
+        run: |
+          dbus-run-session -- bash -euo pipefail -c '
+            echo -n "ci-only" | gnome-keyring-daemon --unlock --components=secrets >/dev/null
+            xvfb-run -a flutter test integration_test/platform_contract_test.dart -d linux
+          '
+      - name: No silent fallback without a Secret Service
+        working-directory: example
+        run: |
+          # Make no Secret Service provider activatable on a fresh bus.
+          sudo rm -f /usr/share/dbus-1/services/org.freedesktop.secrets.service \
+                     /usr/share/dbus-1/services/org.gnome.keyring.service
+          dbus-run-session -- \
+            xvfb-run -a flutter test integration_test/linux_no_secret_service_test.dart \
+              -d linux --dart-define=PQKS_EXPECT_NO_SECRET_SERVICE=true
+
+  android:
+    name: Android (API ${{ matrix.api }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 24: minSdk. 28: setUnlockedDeviceRequired. 35: current.
+        api: [24, 28, 35]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Build
+        working-directory: example
+        run: flutter build apk --debug
+      - name: JVM unit tests (contract + entry store)
+        working-directory: example/android
+        run: ./gradlew :pqkeystore:testDebugUnitTest
+      - name: Contract suite on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: x86_64
+          target: ${{ matrix.api >= 30 && 'google_apis' || 'default' }}
+          disable-animations: true
+          working-directory: example
+          script: flutter test integration_test/platform_contract_test.dart -d emulator-5554
+
+  ios:
+    name: iOS (${{ matrix.spm && 'SwiftPM' || 'CocoaPods' }})
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        spm: [false, true]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Select dependency manager
+        run: |
+          if [ "${{ matrix.spm }}" = "true" ]; then
+            flutter config --enable-swift-package-manager
+          else
+            flutter config --no-enable-swift-package-manager
+          fi
+      - name: Build
+        working-directory: example
+        run: flutter build ios --simulator --debug
+      - name: Boot simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin)["devices"]
+          print(next(x["udid"] for k,v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone")))')
+          xcrun simctl boot "$UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+      - name: Contract suite on simulator
+        working-directory: example
+        run: flutter test integration_test/platform_contract_test.dart -d ${{ steps.sim.outputs.udid }}
+
+  macos:
+    name: macOS (data protection keychain)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Build
+        working-directory: example
+        run: flutter build macos --debug
+      # The data protection keychain requires a keychain-access-groups
+      # entitlement honoured by the signing identity. Without a team-signed
+      # build this is expected to report UNAVAILABLE (-34018); the job stays
+      # red until a signing identity is provisioned. See doc/PLATFORM.md.
+      - name: Contract suite
+        working-directory: example
+        run: flutter test integration_test/platform_contract_test.dart -d macos
+
+  windows:
+    name: Windows (DPAPI)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Build
+        working-directory: example
+        run: flutter build windows --debug
+      - name: Native unit tests
+        working-directory: example
+        shell: bash
+        run: |
+          cmake --build build/windows/x64 --config Debug --target pqkeystore_test
+          build/windows/x64/plugins/pqkeystore/Debug/pqkeystore_test.exe
+      - name: Contract suite
+        working-directory: example
+        run: flutter test integration_test/platform_contract_test.dart -d windows
