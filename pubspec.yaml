@@ -40,9 +40,11 @@ flutter:
         pluginClass: PqKeystorePlugin
       ios:
         pluginClass: PqKeystorePlugin
+        sharedDarwinSource: true
       macos:
         pluginClass: PqKeystorePlugin
+        sharedDarwinSource: true
       windows:
         pluginClass: PqKeystorePluginCApi
       linux:
-        pluginClass: PqKeystorePluginCApi
+        pluginClass: PqKeystorePlugin

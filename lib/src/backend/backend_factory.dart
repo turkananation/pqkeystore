@@ -4,14 +4,15 @@ import 'backend.dart';
 import 'file_keystore_backend.dart';
 import 'memory_keystore_backend.dart';
 import 'platform_keystore_backend.dart';
+import 'platform_options.dart';
 
-enum BackendType {
-  memory,
-  file,
-  platform,
-}
+enum BackendType { memory, file, platform }
 
-PqKeystoreBackend createBackend(BackendType type, {String? path}) {
+PqKeystoreBackend createBackend(
+  BackendType type, {
+  String? path,
+  PlatformStoreOptions platformOptions = const PlatformStoreOptions(),
+}) {
   switch (type) {
     case BackendType.memory:
       return MemoryKeystoreBackend();
@@ -21,6 +22,6 @@ PqKeystoreBackend createBackend(BackendType type, {String? path}) {
       }
       return FileKeystoreBackend(Directory(path));
     case BackendType.platform:
-      return PlatformKeystoreBackend();
+      return PlatformKeystoreBackend(options: platformOptions);
   }
 }
