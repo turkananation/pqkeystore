@@ -1,21 +1,25 @@
-# Windows C API Scaffold for PQ Keystore
+# pqkeystore — Windows
 
-This directory contains the scaffolding for the Windows implementation of the `pqkeystore` Flutter plugin.
+Implements [platform channel contract v1](../doc/PLATFORM_CONTRACT.md) with
+DPAPI-protected files. Design and limits: [ADR-0009](../doc/adr/0009-native-backend-designs.md).
 
-## Implementation Details
+| File | Role |
+| --- | --- |
+| `pq_keystore_plugin_c_api.cpp` | `PqKeystorePluginCApiRegisterWithRegistrar` entry point |
+| `pq_keystore_plugin.{h,cpp}` | Channel wiring (platform thread, synchronous) |
+| `pq_keystore_contract.{h,cpp}` | Argument validation (portable C++, unit-tested) |
+| `pq_keystore_dpapi_store.{h,cpp}` | DPAPI file store |
+| `test/pq_keystore_plugin_test.cpp` | Native unit tests (validation + real DPAPI round trips) |
 
-The implementation should use the Data Protection API (DPAPI) to securely store and retrieve encrypted data.
+- Location: `%LOCALAPPDATA%\yardenah\pqkeystore\<exe-stem>\v1\`. Directories the plugin creates are restricted to the current user and SYSTEM.
+- File names are `sha256(id).pqke`. The ID is stored in the header and bound into the DPAPI entropy.
+- Writes are atomic (`MoveFileExW` replace). Old entries survive failed writes.
+- No optional capabilities in v1; all are rejected with `UNSUPPORTED_OPTION`.
+- DPAPI user scope does not isolate applications running as the same user.
 
-- **Storage**: Data should be stored as encrypted files in `%LOCALAPPDATA%\yardenah\pqkeystore\`.
-- **Encryption**: Use `CryptProtectData` to encrypt data before writing to the file system. Ensure the `CRYPTPROTECT_UI_FORBIDDEN` flag is set to prevent any UI prompts from blocking the application.
-- **Decryption**: Use `CryptUnprotectData` to decrypt data retrieved from the file system.
-- **Methods**: Implement the following C API endpoints exposed via `pq_keystore_plugin_c_api.cpp`:
-    - `put`
-    - `get`
-    - `delete`
-    - `contains`
-    - `putJson`
-    - `getJson`
-    - `platformInfo`
+Native unit tests (from `example/` after `flutter build windows --debug`):
 
-This remains a TODO for complete integration.
+```sh
+cmake --build build/windows/x64 --config Debug --target pqkeystore_test
+build/windows/x64/plugins/pqkeystore/Debug/pqkeystore_test.exe
+```

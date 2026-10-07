@@ -1,3 +1,8 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  package="com.yardenah.pqkeystore">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      No permissions are required. Records live in Context.noBackupFilesDir,
+      which is excluded from Auto Backup and device-to-device transfer: the
+      AndroidKeyStore key that protects them never leaves the device, so a
+      restored copy could not be decrypted anyway.
+    -->
 </manifest>
