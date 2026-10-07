@@ -113,8 +113,8 @@ internal class EntryStoreTest {
     @Test
     fun garbageAndTempFilesAreIgnored() {
         store.put("a", byteArrayOf(1), KeyProfile.DEFAULT)
-        File(dir, "v1/${"0".repeat(64)}.pqke").writeBytes(byteArrayOf(1, 2, 3))
-        val temp = File(dir, "v1/x.pqke.tmp-1").apply { writeBytes(byteArrayOf(1)) }
+        File(dir, "v1/${"0".repeat(64)}.pqna").writeBytes(byteArrayOf(1, 2, 3))
+        val temp = File(dir, "v1/x.pqna.tmp-1").apply { writeBytes(byteArrayOf(1)) }
         assertEquals(listOf("a"), store.listIds())
         store.removeStaleTempFiles(olderThanMillis = 0, now = System.currentTimeMillis() + 1000)
         assertFalse(temp.exists())

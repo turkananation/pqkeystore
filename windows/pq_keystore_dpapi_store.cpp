@@ -23,9 +23,9 @@
 namespace pqkeystore {
 namespace {
 
-constexpr char kMagic[4] = {'P', 'Q', 'K', 'E'};
+constexpr char kMagic[4] = {'P', 'Q', 'N', 'W'};
 constexpr uint8_t kFormatVersion = 1;
-constexpr wchar_t kExtension[] = L".pqke";
+constexpr wchar_t kExtension[] = L".pqnw";
 constexpr wchar_t kTempMarker[] = L".tmp-";
 constexpr char kEntropyContext[] = "com.yardenah.pqkeystore.v1";
 // DPAPI adds a few hundred bytes; allow generous headroom.
@@ -315,8 +315,11 @@ std::wstring DpapiStore::PathFor(const std::string& id) const {
 
 std::vector<uint8_t> DpapiStore::Entropy(const std::string& id) const {
   // context \0 app \0 id — binds every blob to its app namespace and ID.
-  std::vector<uint8_t> e(kEntropyContext,
-                         kEntropyContext + sizeof(kEntropyContext));
+  // "com.yardenah.pqkeystore.v1" \0 app \0 id — binds every blob to its
+  // app namespace and ID.
+  std::vector<uint8_t> e(
+      kEntropyContext, kEntropyContext + sizeof(kEntropyContext) - 1);
+  e.push_back(0);
   e.insert(e.end(), app_.begin(), app_.end());
   e.push_back(0);
   e.insert(e.end(), id.begin(), id.end());

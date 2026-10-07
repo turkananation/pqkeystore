@@ -52,3 +52,6 @@ app.*.map.json
 
 # CRITICAL SECURITY RULE: NEVER COMMIT KEYSTORE FILES
 *.pqks
+
+# Kotlin daemon state
+**/.kotlin/

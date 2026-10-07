@@ -142,6 +142,14 @@ StoreResult SecretStore::Put(const std::string& id,
       value, nullptr, &error);
   secret_value_unref(value);
   if (!ok) {
+    // No default collection (fresh KWallet/KeePassXC setups): there is no
+    // usable secure storage, which callers may handle via the file fallback.
+    if (error != nullptr && error->domain == SECRET_ERROR &&
+        error->code == SECRET_ERROR_NO_SUCH_OBJECT) {
+      return Error(kErrUnavailable,
+                   std::string("no default Secret Service collection: ") +
+                       error->message);
+    }
     if (error != nullptr) return FromGError("store failed", error);
     return Error(kErrStorage, "store failed");
   }

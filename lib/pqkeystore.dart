@@ -21,6 +21,7 @@ export 'src/api/unlock.dart';
 // ── Backend ─────────────────────────────────────────────────────────────
 export 'src/backend/backend.dart';
 export 'src/backend/backend_factory.dart';
+export 'src/backend/fallback_keystore_backend.dart';
 export 'src/backend/file_keystore_backend.dart';
 export 'src/backend/memory_keystore_backend.dart';
 export 'src/backend/platform_contract.dart';

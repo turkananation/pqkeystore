@@ -12,7 +12,7 @@ DPAPI-protected files. Design and limits: [ADR-0009](../doc/adr/0009-native-back
 | `test/pq_keystore_plugin_test.cpp` | Native unit tests (validation + real DPAPI round trips) |
 
 - Location: `%LOCALAPPDATA%\yardenah\pqkeystore\<exe-stem>\v1\`. Directories the plugin creates are restricted to the current user and SYSTEM.
-- File names are `sha256(id).pqke`. The ID is stored in the header and bound into the DPAPI entropy.
+- File names are `sha256(id).pqnw` (PQNW envelope, see [`doc/FORMATS.md`](../doc/FORMATS.md)). The ID is stored in the header and bound into the DPAPI entropy.
 - Writes are atomic (`MoveFileExW` replace). Old entries survive failed writes.
 - No optional capabilities in v1; all are rejected with `UNSUPPORTED_OPTION`.
 - DPAPI user scope does not isolate applications running as the same user.

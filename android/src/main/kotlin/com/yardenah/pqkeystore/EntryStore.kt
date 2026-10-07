@@ -1,13 +1,16 @@
 // Copyright 2024–2026 Yardenah / Turkana Nation. MIT license.
 //
+// PQNA ("PQ Native Android") file-per-entry store. Spec: doc/FORMATS.md §3.
+// Not to be confused with PQKS, the portable record it encrypts.
+//
 // File-per-entry store for Android. Pure JVM (no Android APIs) so it is
 // unit-testable; the AndroidKeyStore cipher is injected as a [Sealer].
 //
 // Location : <noBackupFilesDir>/pqkeystore/v1/
-// File name: lowercase hex SHA-256 of the UTF-8 ID + ".pqke". IDs are never
+// File name: lowercase hex SHA-256 of the UTF-8 ID + ".pqna". IDs are never
 //            interpreted as paths and case variants never collide.
 // File body: header || iv || ciphertext+tag
-//            header = "PQKE" | u8 version(1) | u8 profile | u16be idLen | id
+//            header = "PQNA" | u8 version(1) | u8 profile | u16be idLen | id
 //                     | u8 ivLen
 //            The full header is the AES-GCM AAD, binding ciphertext to the
 //            ID and key profile.
@@ -164,9 +167,9 @@ internal class EntryStore(private val dir: File, private val sealer: Sealer) {
     }
 
     companion object {
-        const val EXTENSION = ".pqke"
+        const val EXTENSION = ".pqna"
         const val TEMP_MARKER = ".tmp-"
-        private val MAGIC = byteArrayOf('P'.code.toByte(), 'Q'.code.toByte(), 'K'.code.toByte(), 'E'.code.toByte())
+        private val MAGIC = byteArrayOf('P'.code.toByte(), 'Q'.code.toByte(), 'N'.code.toByte(), 'A'.code.toByte())
         private const val FORMAT_VERSION = 1
         private const val GCM_TAG_BYTES = 16
         private const val MAX_FILE_BYTES = Contract.MAX_RECORD_BYTES + 64 * 1024L

@@ -5,6 +5,7 @@ All five registered targets are required for v1 ([ADR-0001](adr/0001-five-platfo
 - Contract: [`PLATFORM_CONTRACT.md`](PLATFORM_CONTRACT.md) (ADR-0002, Proposed)
 - Per-platform design and limits: [ADR-0009](adr/0009-native-backend-designs.md) (Proposed)
 - Claims: [`CLAIM_BOUNDARY.md`](CLAIM_BOUNDARY.md)
+- On-disk formats for every backend: [`FORMATS.md`](FORMATS.md)
 
 ## Current Status
 
@@ -41,7 +42,24 @@ What `platformDefault` means:
 - **iOS**: Add `NSFaceIDUsageDescription` to `Info.plist` if `requireBiometric` or `requireUserPresence` is used.
 - **macOS**: Add a `keychain-access-groups` entitlement, e.g. `$(AppIdentifierPrefix)<bundle id>`, and sign with a team identity. Without it, every operation returns `UNAVAILABLE` (`errSecMissingEntitlement`). The legacy file keychain is never used as a fallback.
 - **Windows**: No extra setup. Data is namespaced by executable name.
-- **Linux**: Build dependency `libsecret-1-dev` (≥ 0.18). Runtime needs a Secret Service provider (gnome-keyring, KWallet ≥ 5.97, KeePassXC). Headless sessions without one get `UNAVAILABLE`; use `FileKeystoreBackend` explicitly if that is acceptable for your threat model.
+- **Linux**: Build dependency `libsecret-1-dev` (≥ 0.18). Runtime needs a Secret Service provider (gnome-keyring, KWallet ≥ 5.97, KeePassXC). Headless sessions without one get `UNAVAILABLE`.
+
+## Fallback Storage (opt-in)
+
+When the OS secure-storage facility is not available, `FallbackKeystoreBackend` can persist records into a dedicated directory instead of failing. It is **opt-in** and only activates on `UNAVAILABLE`; `LOCKED`, `USER_CANCELLED`, `AUTH_FAILED`, and option-enforcement errors are surfaced, not bypassed:
+
+```dart
+final backend = FallbackKeystoreBackend(
+  secure: PlatformKeystoreBackend(),
+  fallback: FileKeystoreBackend(Directory('<app-support>/pqkeystore')),
+  onFallback: (reason) => log.warning('using file fallback', reason),
+);
+```
+
+- Reads consult the fallback copy first (it is never older than the secure copy), then secure storage.
+- A successful secure write removes the fallback copy; `migrateToSecure()` moves all fallback records to secure storage.
+- A `delete` issued while the secure store is unavailable leaves a tombstone so the record cannot resurface when the store recovers.
+- Protection of fallback files equals the protection inside the PQKS record (the same `PqKeystoreCrypto`). Treat the directory as private; do not point it at a shared folder.
 
 ## Known Limitations
 

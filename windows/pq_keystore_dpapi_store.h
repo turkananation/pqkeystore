@@ -1,14 +1,16 @@
 // Copyright 2024–2026 Yardenah / Turkana Nation. MIT license.
 //
-// DPAPI-protected file storage for Windows.
+// PQNW ("PQ Native Windows") DPAPI-protected file storage. Spec:
+// doc/FORMATS.md §4. Not to be confused with PQKS, the portable record it
+// encrypts.
 //
 // Location : %LOCALAPPDATA%\yardenah\pqkeystore\<app>\v1\
 //            Directories created by the plugin get a protected DACL granting
 //            access only to the current user and SYSTEM.
-// File name: lowercase hex SHA-256 of the UTF-8 ID + ".pqke" — injective in
+// File name: lowercase hex SHA-256 of the UTF-8 ID + ".pqnw" — injective in
 //            practice, case-insensitive-filesystem safe, and short enough to
 //            stay under MAX_PATH. IDs are never interpreted as paths.
-// File body: "PQKE" | u8 version(1) | u16be idLen | id | u32be blobLen | blob
+// File body: "PQNW" | u8 version(1) | u16be idLen | id | u32be blobLen | blob
 //            blob = CryptProtectData(record, entropy = context || app || id,
 //                                    CRYPTPROTECT_UI_FORBIDDEN)
 // Writes   : temp file + FlushFileBuffers + MoveFileExW(REPLACE_EXISTING |

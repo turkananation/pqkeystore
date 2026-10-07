@@ -13,7 +13,7 @@ ADR-0001 requires all five targets to implement one storage contract. ADR-0002 p
 ### Common rules
 
 - Native code stores one opaque PQKS blob per ID. No separate metadata, no reserved ID prefixes.
-- IDs are mapped injectively and never interpreted as paths. File-based backends use `hex(SHA-256(UTF-8 ID)).pqke` and store the ID in an authenticated header, so case-insensitive filesystems, path characters, and reserved device names (`CON`, `NUL`) cannot alias or escape.
+- IDs are mapped injectively and never interpreted as paths. File-based backends use `hex(SHA-256(UTF-8 ID)).pqna` (Android) / `.pqnw` (Windows) and store the ID in an authenticated header, so case-insensitive filesystems, path characters, and reserved device names (`CON`, `NUL`) cannot alias or escape.
 - Replacement preserves the previous entry until the new one is committed.
 - Optional security capabilities are reported dynamically and either enforced or rejected with `UNSUPPORTED_OPTION`.
 - Data is namespaced per application. **Namespacing is not isolation** where the OS does not isolate (Linux, Windows).
@@ -21,7 +21,7 @@ ADR-0001 requires all five targets to implement one storage contract. ADR-0002 p
 ### Android — AndroidKeyStore AES-256-GCM + files in `noBackupFilesDir`
 
 - One non-exportable AES-256-GCM key per profile: `com.yardenah.pqkeystore.v1.default`, and `…v1.unlocked` (`setUnlockedDeviceRequired`, API 28+).
-- One file per entry in `noBackupFilesDir/pqkeystore/v1/`: `"PQKE" | ver | profile | idLen | id | ivLen || iv || ct+tag`. The whole header is the GCM AAD, binding the ciphertext to its ID and key profile.
+- One file per entry in `noBackupFilesDir/pqkeystore/v1/`: `"PQNA" | ver | profile | idLen | id | ivLen || iv || ct+tag`. The whole header is the GCM AAD, binding the ciphertext to its ID and key profile.
 - Write: temp file → `fsync` → `rename(2)` → directory `fsync`.
 - `noBackupFilesDir` is excluded from Auto Backup and device-to-device transfer. The keystore key never leaves the device, so a restored blob would be undecryptable; excluding it avoids "restored but unreadable" states.
 - Capabilities: `accessibility.whenUnlocked` (API 28+ with a secure lock screen); `accessibility.afterFirstUnlock` (file-based encryption plus a secure lock screen, enforced by credential-encrypted storage). `requireUserPresence`/`requireBiometric` need `BiometricPrompt` from a `FragmentActivity` and are **not offered in v1**. `synchronizable` has no equivalent.
@@ -41,7 +41,7 @@ ADR-0001 requires all five targets to implement one storage contract. ADR-0002 p
 ### Windows — DPAPI (user scope) protected files
 
 - `%LOCALAPPDATA%\yardenah\pqkeystore\<exe-stem>\v1\` with `\\?\` long paths. Directories created by the plugin get a protected DACL: current user + SYSTEM.
-- File: `"PQKE" | ver | idLen | id | blobLen | CryptProtectData(record, entropy = context‖app‖ID, CRYPTPROTECT_UI_FORBIDDEN)`. The entropy binds each blob to its app namespace and ID, and the format is strict (no trailing bytes).
+- File: `"PQNW" | ver | idLen | id | blobLen | CryptProtectData(record, entropy = context‖app‖ID, CRYPTPROTECT_UI_FORBIDDEN)`. The entropy binds each blob to its app namespace and ID, and the format is strict (no trailing bytes).
 - Write: unique temp file → `FlushFileBuffers` → `MoveFileExW(REPLACE_EXISTING | WRITE_THROUGH)`, retrying transient sharing violations (antivirus). Stale temp files older than 10 minutes are removed at first use.
 - Readers open with `FILE_SHARE_DELETE` so replacement is never blocked by our own reads.
 - No optional capabilities in v1. Windows Hello (`KeyCredentialManager`) is a candidate for a future `requireUserPresence`.

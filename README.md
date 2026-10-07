@@ -122,6 +122,9 @@ All five targets implement [platform channel contract v1](doc/PLATFORM_CONTRACT.
 | Linux | Secret Service via libsecret, no file fallback | Contract suite passing locally |
 
 Unsupported storage options are rejected with `UNSUPPORTED_OPTION`, never ignored.
+When the OS secure store is unavailable, an opt-in `FallbackKeystoreBackend` can persist sealed records into a private directory ([`doc/PLATFORM.md`](doc/PLATFORM.md)).
+
+Byte-level layouts for every on-disk artifact: [`doc/FORMATS.md`](doc/FORMATS.md).
 
 ## PQKS Binary Format
 

@@ -91,6 +91,10 @@ final class SealedRecord {
       }
       final length = byteData.getUint32(offset, Endian.big);
       offset += 4;
+      // Refuse absurd declared lengths before slicing.
+      if (length > 1 << 20) {
+        throw const FormatException('Field length out of range');
+      }
       if (offset + length > bytes.length) {
         throw const FormatException('Unexpected EOF');
       }
@@ -118,6 +122,11 @@ final class SealedRecord {
         : jsonDecode(utf8.decode(kdfBytes)) as Map<String, dynamic>;
 
     final ciphertext = readField();
+
+    // Strict framing: no trailing bytes (BUG-008).
+    if (offset != bytes.length) {
+      throw const FormatException('Trailing bytes after PQKS record');
+    }
 
     return SealedRecord(
       metadata: metadata,

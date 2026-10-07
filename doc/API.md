@@ -75,6 +75,19 @@ final info = await backend.platformInfo(); // os, backend, supportedOptions
 * `PlatformAccessibility`: `platformDefault`, `whenUnlocked`, `afterFirstUnlock`.
 * Platform IDs are 1 to 256 UTF-8 bytes, contain no U+0000, and are compared exactly. Records are at most 1 MiB.
 * `listIds()` returns every stored ID and is useful for removing a `CORRUPT` entry with `delete`.
+
+## Fallback And File Backends
+
+```dart
+final files = FileKeystoreBackend(Directory(path));              // layout v1
+final fallback = FallbackKeystoreBackend(
+  secure: PlatformKeystoreBackend(),
+  fallback: files,
+  onFallback: (reason) { /* surface to the app */ },
+);
+```
+
+`FileKeystoreBackend` writes one `<sha256(id)>.pqks` file per record into a dedicated directory (`0700`/`0600` on desktop POSIX), with no index and no sanitized names. `FallbackKeystoreBackend` only diverts to the file store when the platform store reports `UNAVAILABLE`, replays tombstones when the platform store returns, and removes fallback copies once a secure write succeeds. Details: [`PLATFORM.md`](PLATFORM.md), [`FORMATS.md`](FORMATS.md), [ADR-0010](adr/0010-file-fallback-and-recovery.md).
 * Error codes are listed in `PlatformErrorCode`. `USER_CANCELLED` surfaces as `Cancelled`; all other codes surface as `PlatformError.code`. See [`PLATFORM_CONTRACT.md`](PLATFORM_CONTRACT.md) and [`PLATFORM.md`](PLATFORM.md).
 
 ## Results And Errors
