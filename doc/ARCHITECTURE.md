@@ -15,10 +15,10 @@ flowchart TD
     PqKeystoreBackend --> Plat[PlatformBackend]
     
     Plat -.-> MethodChannel((MethodChannel))
-    MethodChannel -.-> Android[Android partial]
-    MethodChannel -.-> iOS[iOS/macOS partial]
-    MethodChannel -.-> Windows[Windows stub]
-    MethodChannel -.-> Linux[Linux stub]
+    MethodChannel -.-> Android[Android: AndroidKeyStore + files]
+    MethodChannel -.-> iOS[iOS/macOS: data protection keychain]
+    MethodChannel -.-> Windows[Windows: DPAPI files]
+    MethodChannel -.-> Linux[Linux: Secret Service]
 ```
 
 ## Core Components
@@ -41,7 +41,7 @@ Handles the persistence of the sealed PQKS blobs.
 
 * **Memory**: Transient, used for testing or highly sensitive session keys.
 * **File**: Stores blobs on disk, useful for desktop or pure-Dart environments.
-* **Platform**: Delegates to a Flutter method channel. Android and Apple handlers are partial and contract-incompatible; Linux and Windows are stubs.
+* **Platform**: Delegates to a Flutter method channel implementing [contract v1](PLATFORM_CONTRACT.md). Native code stores one opaque PQKS blob per ID; Dart filters lists by decoding records. Per-platform design: [ADR-0009](adr/0009-native-backend-designs.md). On-device evidence status: [`PLATFORM.md`](PLATFORM.md).
 
 ## Defense in Depth
 

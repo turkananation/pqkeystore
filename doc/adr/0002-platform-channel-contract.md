@@ -24,8 +24,14 @@ Required operations include put, get, delete, contains, listIds, putJson, getJso
 - Change only the Dart side to match each native implementation. Rejected because platform drift would remain likely.
 - Allow per-platform schemas. Rejected because it defeats parity and increases caller-visible behavioral differences.
 
-## Open Questions
+## Proposed Resolution (2026-10-07)
 
-- Should not-found be represented as `null`/`false` or a standardized platform error for each operation?
-- Should metadata index operations remain separate channel calls or be part of an atomic record operation?
-- Which option fields are required for v1 on each OS?
+Contract v1 is specified in [`PLATFORM_CONTRACT.md`](../PLATFORM_CONTRACT.md) and implemented on all five platforms; per-platform choices are in [ADR-0009](0009-native-backend-designs.md). The status stays **Proposed** until maintainers accept it and every platform CI job passes.
+
+- **Argument names:** `id`, `data`, `options`. Argument maps are closed (unknown keys → `INVALID_ARGS`).
+- **Not-found:** `get` → `null`, `contains`/`delete` → `false`. No `NOT_FOUND` error code.
+- **Metadata:** no separate metadata operations. Native code stores only the PQKS blob, and Dart filters `list()` by decoding records. This makes each write one atomic native operation and removes the `__meta__` namespace (BUG-010). `putJson`/`getJson` are removed.
+- **Options:** all four keys are required. Each non-default value is a capability request that is either enforced or rejected with `UNSUPPORTED_OPTION`, according to `platformInfo.supportedOptions` evaluated at call time. `accessibleWhenUnlocked: bool` is replaced by `accessibility: platformDefault | whenUnlocked | afterFirstUnlock`, so the defaults are portable.
+- **Versioning:** `platformInfo.contractVersion` is checked by a one-time client handshake.
+- **Errors:** a closed set of nine native codes plus the Dart-only `CONTRACT_MISMATCH`.
+- **Shared tests:** `test/contract/platform_contract_suite.dart` runs against a pure-Dart reference (`flutter test`) and against each native implementation (`example/integration_test/`).

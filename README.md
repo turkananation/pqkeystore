@@ -34,7 +34,7 @@ incomplete; all five remain v1 production gates. See the
 │   wrap / unwrap     │  Memory│File│Platform  │
 ├─────────────────────┘────────────────────────┤
 │             Native storage (incomplete)       │
-│     Android · iOS/macOS partial; others stub  │
+│  Android · iOS · macOS · Windows · Linux (v1) │
 └──────────────────────────────────────────────┘
 ```
 
@@ -111,13 +111,17 @@ final result = await keystore.use(
 
 ## Platform Support
 
-| Platform | Backend | Mechanism |
-| ---------- | --------- | ----------- |
-| Android | Partial native handler; contract mismatch | Not production-ready |
-| iOS | Partial Keychain handler; contract mismatch | Not production-ready |
-| macOS | Partial Keychain handler; contract mismatch | Not production-ready |
-| Windows | Registered stub | Not implemented |
-| Linux | Registered stub | Not implemented |
+All five targets implement [platform channel contract v1](doc/PLATFORM_CONTRACT.md). Support is claimed only once a platform's CI contract job passes; see [`doc/PLATFORM.md`](doc/PLATFORM.md).
+
+| Platform | Mechanism | Status |
+|----------|-----------|--------|
+| Android | AndroidKeyStore AES-256-GCM, files in `noBackupFilesDir` | Implemented; pending CI |
+| iOS | Data protection keychain | Implemented; pending CI |
+| macOS | Data protection keychain (needs `keychain-access-groups`) | Implemented; pending CI and signing |
+| Windows | DPAPI user-scope files | Implemented; pending CI |
+| Linux | Secret Service via libsecret, no file fallback | Contract suite passing locally |
+
+Unsupported storage options are rejected with `UNSUPPORTED_OPTION`, never ignored.
 
 ## PQKS Binary Format
 

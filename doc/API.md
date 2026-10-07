@@ -60,11 +60,28 @@ Future<KsResult<T>> useShare<T>(
 
 `UnlockMethod` is sealed and currently has `PassphraseUnlock(Uint8List passphrase)`, `PlatformUnlock()`, and `PassphraseThenPlatform(Uint8List passphrase)`. `PqKeystore.put` rejects `PlatformUnlock` for v1. Platform authentication behavior for the other types is unresolved; see [ADR-0004](adr/0004-unlock-and-secret-lifecycle.md). Do not infer biometric enforcement from the type names.
 
+## Platform Backend
+
+```dart
+final backend = PlatformKeystoreBackend(
+  options: const PlatformStoreOptions(
+    accessibility: PlatformAccessibility.whenUnlocked,
+  ),
+);
+final info = await backend.platformInfo(); // os, backend, supportedOptions
+```
+
+* `PlatformStoreOptions({requireUserPresence, requireBiometric, accessibility, synchronizable})`. The defaults request nothing extra and are accepted on all five platforms. Each non-default value must appear in `info.supportedOptions`; otherwise writes fail with `PlatformError(code: 'UNSUPPORTED_OPTION')`. `synchronizable` cannot be combined with user presence or biometrics.
+* `PlatformAccessibility`: `platformDefault`, `whenUnlocked`, `afterFirstUnlock`.
+* Platform IDs are 1 to 256 UTF-8 bytes, contain no U+0000, and are compared exactly. Records are at most 1 MiB.
+* `listIds()` returns every stored ID and is useful for removing a `CORRUPT` entry with `delete`.
+* Error codes are listed in `PlatformErrorCode`. `USER_CANCELLED` surfaces as `Cancelled`; all other codes surface as `PlatformError.code`. See [`PLATFORM_CONTRACT.md`](PLATFORM_CONTRACT.md) and [`PLATFORM.md`](PLATFORM.md).
+
 ## Results And Errors
 
 The current API returns local `KsResult<T>`, implemented by `KsSuccess<T>` and `KsFailure<T>`, with a `when(success:, failure:)` method. It is not currently the `swissarmyknife` `Result` type.
 
-Failure types include `NotFound`, `PlatformError`, `CryptoError`, `FormatError`, `Cancelled`, and `PolicyError`, all derived from `PqKeystoreError`. Exact platform error codes depend on backend mappings.
+Failure types include `NotFound`, `PlatformError`, `CryptoError`, `FormatError`, `Cancelled`, and `PolicyError`, all derived from `PqKeystoreError`. Platform error codes are the closed set in `PlatformErrorCode` ([`PLATFORM_CONTRACT.md`](PLATFORM_CONTRACT.md) §6).
 
 ## PQKS Record
 
