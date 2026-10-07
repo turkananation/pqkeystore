@@ -7,7 +7,8 @@
   - Arguments are `id`/`data`/`options`; `delete` returns a bool; `listIds` is implemented on every platform (BUG-002/003/004).
   - `PlatformStoreOptions.accessibleWhenUnlocked` is replaced by `accessibility: PlatformAccessibility`. Unsupported options fail with `UNSUPPORTED_OPTION`.
   - Added `PlatformContract`, `PlatformErrorCode`, `PlatformInfo`, `PlatformKeystoreBackend.platformInfo()` and `.listIds()`. Records are bound to their storage ID on read.
-* Native backends: Android (AndroidKeyStore + noBackup files, PQNA envelope), iOS/macOS (shared `darwin/` source, data protection keychain, CocoaPods + SwiftPM, privacy manifest), Windows (DPAPI files, PQNW envelope), Linux (libsecret, no file fallback, bounded reachability probe).
+* Native backends: Android (AndroidKeyStore + noBackup files, PQNA v2 envelope), iOS/macOS (shared `darwin/` source, data protection keychain, CocoaPods + SwiftPM, privacy manifest), Windows (DPAPI files, PQNW envelope), Linux (libsecret, no file fallback, bounded reachability probe).
+* `PQNA` v2 seals records as 48 KiB chunks (nChunks-prefixed IV blob, one AEAD tag per chunk), fixing AndroidKeyStore GCM tag failures on API ≤28 for large records. On-device instrumentation test (`OnDeviceRoundTripTest`) added; PQNA v1 (the pre-chunk layout) is rejected on read.
 * `FileKeystoreBackend` rewritten as file store v1: hashed filenames, no untrusted index, strict record framing, atomic replace, verified permissions. Legacy sanitized-name directories are adopted in place.
 * `FallbackKeystoreBackend`: opt-in dual-read/migrate-on-write file fallback with tombstone replay, triggered only on `UNAVAILABLE` (ADR-0010).
 * `doc/FORMATS.md` is the single reference for on-disk layouts (PQKS, PQNA, PQNW, file store v1, tombstones).

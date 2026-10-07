@@ -29,12 +29,24 @@ internal class AndroidKeystoreSealer : Sealer {
 
     override fun seal(profile: KeyProfile, aad: ByteArray, plaintext: ByteArray): Sealer.Sealed {
         val key = key(profile, create = true)
+        val n = chunksFor(plaintext.size)
         return mapErrors {
-            val cipher = Cipher.getInstance(TRANSFORMATION)
-            // The keystore generates the IV (randomized encryption required).
-            cipher.init(Cipher.ENCRYPT_MODE, key)
-            cipher.updateAAD(aad)
-            Sealer.Sealed(cipher.iv, cipher.doFinal(plaintext))
+            val ivs = ByteArray(n * IV_BYTES)
+            val out = java.io.ByteArrayOutputStream()
+            for (i in 0 until n) {
+                val chunkLen = kotlin.math.min(CHUNK_PLAINTEXT, plaintext.size - i * CHUNK_PLAINTEXT)
+                val cipher = Cipher.getInstance(TRANSFORMATION)
+                // The keystore generates the IV (randomized encryption required).
+                cipher.init(Cipher.ENCRYPT_MODE, key)
+                cipher.updateAAD(aad)
+                cipher.updateAAD(byteArrayOf(i.toByte()))
+                cipher.iv.copyInto(ivs, destinationOffset = i * IV_BYTES)
+                out.write(cipher.doFinal(plaintext, i * CHUNK_PLAINTEXT, chunkLen))
+            }
+            val ivBlob = ByteArray(1 + n * IV_BYTES)
+            ivBlob[0] = n.toByte()
+            ivs.copyInto(ivBlob, destinationOffset = 1)
+            Sealer.Sealed(ivBlob, out.toByteArray())
         }
     }
 
@@ -44,10 +56,26 @@ internal class AndroidKeystoreSealer : Sealer {
         val key = key(profile, create = false)
             ?: throw Contract.Violation(Contract.ERR_KEY_INVALIDATED, "protecting key no longer exists")
         return mapErrors {
-            val cipher = Cipher.getInstance(TRANSFORMATION)
-            cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_BITS, iv))
-            cipher.updateAAD(aad)
-            cipher.doFinal(ciphertext)
+            val n = iv.firstOrNull()?.toInt()?.and(0xFF) ?: 0
+            if (n < 1 || iv.size != 1 + n * IV_BYTES) {
+                throw Contract.Violation(Contract.ERR_CORRUPT, "Malformed sealed IV blob")
+            }
+            val out = java.io.ByteArrayOutputStream()
+            var offset = 0
+            for (i in 0 until n) {
+                val chunkCipherLen = if (i + 1 < n) CHUNK_PLAINTEXT + GCM_TAG_BYTES else ciphertext.size - offset
+                if (chunkCipherLen <= GCM_TAG_BYTES || offset > ciphertext.size) {
+                    throw Contract.Violation(Contract.ERR_CORRUPT, "Recorded length inconsistency")
+                }
+                val cipher = Cipher.getInstance(TRANSFORMATION)
+                val ivBytes = iv.copyOfRange(1 + i * IV_BYTES, 1 + (i + 1) * IV_BYTES)
+                cipher.init(Cipher.DECRYPT_MODE, key, GCMParameterSpec(GCM_TAG_BITS, ivBytes))
+                cipher.updateAAD(aad)
+                cipher.updateAAD(byteArrayOf(i.toByte()))
+                out.write(cipher.doFinal(ciphertext, offset, chunkCipherLen))
+                offset += chunkCipherLen
+            }
+            out.toByteArray()
         }
     }
 
@@ -110,6 +138,16 @@ internal class AndroidKeystoreSealer : Sealer {
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
         private const val TRANSFORMATION = "AES/GCM/NoPadding"
         private const val GCM_TAG_BITS = 128
+        private const val GCM_TAG_BYTES = 16
+        private const val IV_BYTES = 12
+        // AndroidKeyStore AES-GCM on API ≤28 fails tag verification for
+        // payloads over ~64–256 KiB. Chunking keeps each AEAD call small and
+        // deterministic; many single-chunk records (existing PQNA files)
+        // still decrypt identically.
+        internal const val CHUNK_PLAINTEXT = 48 * 1024
+        internal fun chunksFor(length: Int): Int =
+            if (length <= 0) 1 else (length + CHUNK_PLAINTEXT - 1) / CHUNK_PLAINTEXT
+
         private const val ALIAS_PREFIX = "com.yardenah.pqkeystore.v1."
 
         fun alias(profile: KeyProfile) = when (profile) {

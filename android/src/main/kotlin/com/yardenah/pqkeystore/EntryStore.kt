@@ -9,9 +9,14 @@
 // Location : <noBackupFilesDir>/pqkeystore/v1/
 // File name: lowercase hex SHA-256 of the UTF-8 ID + ".pqna". IDs are never
 //            interpreted as paths and case variants never collide.
-// File body: header || iv || ciphertext+tag
-//            header = "PQNA" | u8 version(1) | u8 profile | u16be idLen | id
-//                     | u8 ivLen
+// File body: header || ivInfo || ciphertext+tag
+//            header = "PQNA" | u8 version(2) | u8 profile | u16be idLen | id
+//            ivInfo = u8 chunkCount | chunkCount * u96-GCM-iv (12 bytes each)
+//            ciphertext = chunk_1 || ... || chunk_count, chunk_i padded to
+//            CHUNK_PLAINTEXT bytes of plaintext except the last chunk.
+//            The full header is the GCM AAD (prepended with a chunk index),
+//            binding every ciphertext to the ID and key profile. v2 only:
+//            GCM AAD byte offset u8(0) (i.e. AAD_i = header || u8 i).
 //            The full header is the AES-GCM AAD, binding ciphertext to the
 //            ID and key profile.
 // Writes   : temp file in the same directory, fsync, rename(2) over the old
@@ -62,11 +67,14 @@ internal class EntryStore(private val dir: File, private val sealer: Sealer) {
     fun put(id: String, data: ByteArray, profile: KeyProfile) {
         ensureDir()
         val idBytes = id.toByteArray(StandardCharsets.UTF_8)
-        val ivLength = 12
-        val header = header(profile, idBytes, ivLength)
+        val header = header(profile, idBytes)
         val sealed = sealer.seal(profile, header, data)
-        if (sealed.iv.size != ivLength) {
-            throw Contract.Violation(Contract.ERR_STORAGE, "unexpected IV length")
+        // Sealer wire convention: Sealed.iv = u8 chunkCount, then chunkCount
+        // concatenated 12-byte GCM IVs. Records with <= CHUNK_PLAINTEXT bytes
+        // carry exactly one chunk and read identically to a monolithic GCM blob.
+        val nChunks = sealed.iv.firstOrNull()?.toInt()?.and(0xFF) ?: -1
+        if (nChunks < 1 || sealed.iv.size != 1 + 12 * nChunks) {
+            throw Contract.Violation(Contract.ERR_STORAGE, "unexpected IV blob shape")
         }
         val target = fileFor(id)
         val temp = File(dir, "${target.name}$TEMP_MARKER${tempCounter.incrementAndGet()}")
@@ -170,7 +178,7 @@ internal class EntryStore(private val dir: File, private val sealer: Sealer) {
         const val EXTENSION = ".pqna"
         const val TEMP_MARKER = ".tmp-"
         private val MAGIC = byteArrayOf('P'.code.toByte(), 'Q'.code.toByte(), 'N'.code.toByte(), 'A'.code.toByte())
-        private const val FORMAT_VERSION = 1
+        private const val FORMAT_VERSION = 2
         private const val GCM_TAG_BYTES = 16
         private const val MAX_FILE_BYTES = Contract.MAX_RECORD_BYTES + 64 * 1024L
 
@@ -179,17 +187,16 @@ internal class EntryStore(private val dir: File, private val sealer: Sealer) {
             return digest.joinToString("") { "%02x".format(it) } + EXTENSION
         }
 
-        fun header(profile: KeyProfile, idBytes: ByteArray, ivLength: Int): ByteArray =
-            ByteBuffer.allocate(4 + 1 + 1 + 2 + idBytes.size + 1).apply {
+        fun header(profile: KeyProfile, idBytes: ByteArray): ByteArray =
+            ByteBuffer.allocate(4 + 1 + 1 + 2 + idBytes.size).apply {
                 put(MAGIC)
                 put(FORMAT_VERSION.toByte())
                 put(profile.wire.toByte())
                 putShort(idBytes.size.toShort())
                 put(idBytes)
-                put(ivLength.toByte())
             }.array()
 
-        /** Strict parse; returns null for anything that is not a v1 entry. */
+        /** Strict parse; returns null for anything that is not a v2 entry. */
         fun parse(bytes: ByteArray): Entry? {
             val buf = ByteBuffer.wrap(bytes)
             if (buf.remaining() < 4 + 1 + 1 + 2) return null
@@ -199,10 +206,13 @@ internal class EntryStore(private val dir: File, private val sealer: Sealer) {
             val idLength = buf.short.toInt() and 0xffff
             if (idLength == 0 || idLength > Contract.MAX_ID_UTF8_BYTES || buf.remaining() < idLength + 1) return null
             val idBytes = ByteArray(idLength).also { buf.get(it) }
-            val ivLength = buf.get().toInt() and 0xff
-            if (ivLength != 12 || buf.remaining() < ivLength + GCM_TAG_BYTES + 1) return null
-            val headerLength = buf.position()
-            val iv = ByteArray(ivLength).also { buf.get(it) }
+            val headerEnd = buf.position()
+            val nChunks = buf.get().toInt() and 0xff
+            if (nChunks < 1 || nChunks > 64 || buf.remaining() < 12 * nChunks + nChunks * GCM_TAG_BYTES) return null
+            val iv = ByteArray(1 + 12 * nChunks).also {
+                it[0] = nChunks.toByte()
+                buf.get(it, 1, 12 * nChunks)
+            }
             val ciphertext = ByteArray(buf.remaining()).also { buf.get(it) }
             val decoder = StandardCharsets.UTF_8.newDecoder()
             val id = try {
@@ -211,7 +221,7 @@ internal class EntryStore(private val dir: File, private val sealer: Sealer) {
                 return null
             }
             if (!Contract.isValidId(id)) return null
-            return Entry(id, profile, bytes.copyOfRange(0, headerLength), iv, ciphertext)
+            return Entry(id, profile, bytes.copyOfRange(0, headerEnd), iv, ciphertext)
         }
     }
 }

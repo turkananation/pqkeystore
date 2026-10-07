@@ -21,7 +21,7 @@ ADR-0001 requires all five targets to implement one storage contract. ADR-0002 p
 ### Android — AndroidKeyStore AES-256-GCM + files in `noBackupFilesDir`
 
 - One non-exportable AES-256-GCM key per profile: `com.yardenah.pqkeystore.v1.default`, and `…v1.unlocked` (`setUnlockedDeviceRequired`, API 28+).
-- One file per entry in `noBackupFilesDir/pqkeystore/v1/`: `"PQNA" | ver | profile | idLen | id | ivLen || iv || ct+tag`. The whole header is the GCM AAD, binding the ciphertext to its ID and key profile.
+- One file per entry in `noBackupFilesDir/pqkeystore/v1/`: `"PQNA" | ver(=2) | profile | idLen | id | nChunks | ivs || chunk_1 || … || chunk_n`, where each chunk is independently sealed with AES-256-GCM using AAD `header || u8 chunk_index`. Chunks exist because API ≤28 AndroidKeyStore GCM can fail tag verification on payloads > ~64 KiB. See [FORMATS.md](../../FORMATS.md) §3.
 - Write: temp file → `fsync` → `rename(2)` → directory `fsync`.
 - `noBackupFilesDir` is excluded from Auto Backup and device-to-device transfer. The keystore key never leaves the device, so a restored blob would be undecryptable; excluding it avoids "restored but unreadable" states.
 - Capabilities: `accessibility.whenUnlocked` (API 28+ with a secure lock screen); `accessibility.afterFirstUnlock` (file-based encryption plus a secure lock screen, enforced by credential-encrypted storage). `requireUserPresence`/`requireBiometric` need `BiometricPrompt` from a `FragmentActivity` and are **not offered in v1**. `synchronizable` has no equivalent.

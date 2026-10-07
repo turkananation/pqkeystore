@@ -39,6 +39,9 @@ android {
         getByName("main") {
             java.srcDirs("src/main/kotlin")
         }
+        getByName("androidTest") {
+            java.srcDirs("src/androidTest/kotlin")
+        }
         getByName("test") {
             java.srcDirs("src/test/kotlin")
         }
@@ -75,4 +78,7 @@ kotlin {
 // No third-party runtime dependencies: only platform AndroidKeyStore/JCA.
 dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test")
+    androidTestImplementation("androidx.test:core:1.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }

@@ -62,17 +62,25 @@ One envelope per record, stored under the app's *no-backup* files directory (exc
 
 ```
  0  "PQNA"                                    magic (4)
- 4  format version                            u8, currently 1
+ 4  format version                            u8, currently 2
  5  key profile                               u8: 0 = DEVICE_DEFAULT, 1 = UNLOCKED_DEVICE_REQUIRED
  6  id length                                 u16
     id bytes                                  UTF-8
-    iv length                                 u8 (12 for AES-GCM)
-    iv bytes
-    ciphertext+tag                            AES-256-GCM(record, key = AndroidKeyStore AES-256, AAD = the header bytes above)
+    chunk count                               u8, n (≥ 1 and ≤ 64)
+    iv blob                                   n × 12 bytes (one AES-GCM IV per chunk)
+    ciphertext+tag                            chunk_1 || … || chunk_n; every chunk but
+                                              the last is exactly 48 KiB of plaintext;
+                                              chunk_i is AES-256-GCM(pt_i, AAD = header || u8 i)
 ```
 
+- Chunking exists because AndroidKeyStore's AES-GCM (on API 24–28 in particular) can fail
+  tag verification for payloads above ~64–256 KiB. It is deterministic C structure, not a
+  semantic change: for a single-chunk record the layout matches a plain GCM-cat blob
+  prefixed by `0x01` (n=1) and one IV.
 - Key: non-exportable AES-256 generated in AndroidKeyStore. `DEVICE_DEFAULT` is the default (`PlatformStoreOptions` defaults); `UNLOCKED_DEVICE_REQUIRED` (`setUnlockedDeviceRequired`, API 28+, secure lock screen) backs `accessibility: whenUnlocked` on devices that claim that capability.
-- The AAD is the header (magic through IV-length byte), so the key profile and ID are authenticated. The IV is covered implicitly: any IV modification fails the GCM tag check.
+- The AAD of every chunk is the exact envelope header bytes (magic through ID) plus the
+  chunk index, so the key profile, ID, and chunk position are all authenticated into every
+  AEAD tag. The IV blob is covered structurally: any deviation fails the GCM tag check.
 - Atomicity: temp file → `fsync` → `rename(2)` over the old file → directory `fsync`. A crash leaves the old envelope intact or a stale `.tmp-*` file, which is ignored and reclaimed.
 - A `.pqna` file cannot be decrypted on another device/profile: the AndroidKeyStore key is non-exportable. That is intentional (ADR-0009).
 
