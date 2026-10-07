@@ -6,7 +6,7 @@
 // Storage: one generic-password item per record in the data protection
 // keychain (kSecUseDataProtectionKeychain on macOS too — the legacy file
 // keychain is never used).
-//   service = "com.yardenah.pqkeystore.v1", account = <storage ID>
+//   service = "com.yardenah.pqkeystore.v1", account = base64url(<storage ID>)
 //
 // Replacement is crash-safe: the new item is first added under a "pending"
 // service, then the old item is deleted and the pending item is renamed.
@@ -134,9 +134,30 @@ public class PqKeystorePlugin: NSObject, FlutterPlugin {
       kSecUseDataProtectionKeychain as String: true,
     ]
     if let account = account {
-      query[kSecAttrAccount as String] = account
+      // The keychain may treat distinct raw UTF-8 accounts with equivalent
+      // canonical forms as one entry. An ASCII-safe, injective, reversible
+      // encoding (base64url of the UTF-8 ID bytes) keeps distinct IDs apart.
+      query[kSecAttrAccount as String] = Self.encodeAccount(account)
     }
     return query
+  }
+
+  /// Maps an arbitrary storage ID to an ASCII-safe keychain account value.
+  static func encodeAccount(_ id: String) -> String {
+    Data(id.utf8).base64EncodedString()
+      .replacingOccurrences(of: "+", with: "-")
+      .replacingOccurrences(of: "/", with: "_")
+      .replacingOccurrences(of: "=", with: "")
+  }
+
+  /// Inverse of [encodeAccount]; returns nil for malformed input.
+  static func decodeAccount(_ encoded: String) -> String? {
+    var s = encoded
+      .replacingOccurrences(of: "-", with: "+")
+      .replacingOccurrences(of: "_", with: "/")
+    s += String(repeating: "=", count: (4 - s.count % 4) % 4)
+    guard let data = Data(base64Encoded: s) else { return nil }
+    return String(bytes: data, encoding: .utf8)
   }
 
   /// A context that fails instead of prompting (for metadata-only queries).
@@ -241,7 +262,8 @@ public class PqKeystorePlugin: NSObject, FlutterPlugin {
     var seen = Set<String>()
     var ids: [String] = []
     for attributes in (out as? [[String: Any]]) ?? [] {
-      if let id = attributes[kSecAttrAccount as String] as? String,
+      if let raw = attributes[kSecAttrAccount as String] as? String,
+        let id = Self.decodeAccount(raw),
         Contract.isValidId(id), seen.insert(id).inserted
       {
         ids.append(id)

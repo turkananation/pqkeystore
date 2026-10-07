@@ -109,7 +109,7 @@ There is no custom binary format: the PQKS record is stored as-is in a generic-p
 | --- | --- |
 | `kSecClass` | `kSecClassGenericPassword` |
 | `kSecAttrService` | `com.yardenah.pqkeystore.v1` (pending items use `com.yardenah.pqkeystore.v1.pending` during replacement) |
-| `kSecAttrAccount` | the storage ID (UTF-8) |
+| `kSecAttrAccount` | `base64url(UTF-8 ID)` — ASCII-safe, injective, reversible (ADR-0009) |
 | `kSecValueData` | the raw PQKS record bytes |
 | `kSecAttrAccessible` | `WhenUnlockedThisDeviceOnly` (default), `AfterFirstUnlockThisDeviceOnly`, or the non-`ThisDeviceOnly` variant when `synchronizable` is requested |
 | `kSecAttrAccessControl` | set instead of the class when `requireUserPresence` / `requireBiometric` is requested (`.userPresence`, `.biometryCurrentSet`) |

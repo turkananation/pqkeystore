@@ -30,7 +30,7 @@ ADR-0001 requires all five targets to implement one storage contract. ADR-0002 p
 
 ### iOS and macOS — data protection keychain (shared `darwin/` source)
 
-- Generic-password items: `service = com.yardenah.pqkeystore.v1`, `account = ID`. `kSecUseDataProtectionKeychain = true` on macOS too; the legacy file keychain is never used.
+- Generic-password items: `service = com.yardenah.pqkeystore.v1`, `account = base64url(UTF-8 ID)` so that distinct UTF-8 IDs with canonically equivalent forms cannot merge in the keychain. `kSecUseDataProtectionKeychain = true` on macOS too; the legacy file keychain is never used.
 - Accessibility: `WhenUnlocked[ThisDeviceOnly]` (default) or `AfterFirstUnlock[ThisDeviceOnly]`. The non-`ThisDeviceOnly` classes are used only when `synchronizable` is requested.
 - `requireUserPresence` → `SecAccessControl(.userPresence)`; `requireBiometric` → `.biometryCurrentSet` (stricter; wins if both are set). Reported only when `LAContext.canEvaluatePolicy` succeeds.
 - Crash-safe replacement (`SecItemUpdate` cannot change access control): add under the `…v1.pending` service → delete the old item → rename the pending item's service. At startup, a pending item is discarded if the committed item exists (the put never returned success); otherwise it is promoted (it is the only copy).
