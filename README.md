@@ -58,8 +58,9 @@ protection varies and is not yet production-verified.
 
 The public constructor accepts `backend:` and `crypto:`. This in-memory sample
 uses test-only bytes; do not substitute production key material or treat this
-snippet as a complete application key-generation/passphrase policy. The example
-app is still simulated; see TRK-013 in [`doc/TRACKER.md`](doc/TRACKER.md).
+snippet as a complete application key-generation/passphrase policy. The bundled
+example app is a real package consumer that drives `put` → `use()` → `list` →
+`delete` against the platform backend; see [`example/lib/main.dart`](example/lib/main.dart).
 
 ```dart
 import 'dart:convert';
