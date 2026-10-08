@@ -11,7 +11,7 @@ All five registered targets are required for v1 ([ADR-0001](adr/0001-five-platfo
 
 | Platform | Mechanism | Source | Evidence | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| Android | AndroidKeyStore AES-256-GCM, files in `noBackupFilesDir` | Contract v1 | JVM unit tests and emulator suite (API 24/28/35) defined in CI; **not yet run** | Pending CI |
+| Android | AndroidKeyStore AES-256-GCM, files in `noBackupFilesDir` | Contract v1 | JVM unit tests and emulator suite (API 26/28/35) defined in CI; **not yet run** | Pending CI |
 | iOS | Data protection keychain | Contract v1 (shared `darwin/`) | Simulator suite (CocoaPods + SwiftPM) defined in CI; **not yet run** | Pending CI |
 | macOS | Data protection keychain | Contract v1 (shared `darwin/`) | Suite defined in CI; needs a signing identity honoring `keychain-access-groups` | Pending CI and signing |
 | Windows | DPAPI (user scope) files under `%LOCALAPPDATA%` | Contract v1 | Contract validator unit-tested locally (cross-compiled on Linux); DPAPI store and suite defined in CI; **not yet run** | Pending CI |

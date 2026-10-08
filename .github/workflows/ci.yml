@@ -87,8 +87,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 24: minSdk. 28: setUnlockedDeviceRequired. 35: current.
-        api: [24, 28, 35]
+        # 26: minSdk. 28: setUnlockedDeviceRequired. 35: current.
+        api: [26, 28, 35]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4

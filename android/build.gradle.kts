@@ -48,10 +48,10 @@ android {
     }
 
     defaultConfig {
-        // API 24: file-based encryption and credential-encrypted storage
+        // API 26: scoped storage, hardware-backed keystore,
         // exist. Capabilities beyond that (e.g. setUnlockedDeviceRequired,
         // API 28) are reported dynamically through platformInfo.
-        minSdk = 24
+        minSdk = 26
     }
 
     testOptions {
