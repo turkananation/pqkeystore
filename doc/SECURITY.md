@@ -19,7 +19,7 @@ We consider the following adversaries and capabilities:
 
 * **App <-> Keystore**: The caller controls key inputs and may copy or retain callback plaintext. The facade does not prevent this.
 * **Keystore <-> Crypto Provider**: `pqkeystore` completely trusts `PqKeystoreCrypto` (e.g., `pqforge`) to execute cryptographic primitives correctly and securely.
-* **Keystore <-> OS**: The package intends to rely on native storage policies, but current platform implementations are incomplete and options are not consistently applied.
+* **Keystore <-> OS**: Native backends store opaque PQKS blobs and enforce or explicitly reject each storage option ([`PLATFORM_CONTRACT.md`](PLATFORM_CONTRACT.md)). Linux Secret Service and Windows DPAPI protect at the user-account level only: other processes running as the same user are not excluded.
 
 ## Defense in Depth
 

@@ -1,38 +1,84 @@
+group = "com.yardenah.pqkeystore"
+version = "0.1.0-dev.1"
+
+buildscript {
+    val kotlinVersion = "2.4.0"
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath("com.android.tools.build:gradle:9.1.0")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
 plugins {
     id("com.android.library")
-    id("org.jetbrains.kotlin.android")
 }
 
 android {
     namespace = "com.yardenah.pqkeystore"
-    compileSdk = 34
 
-    defaultConfig {
-        minSdk = 23
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles("consumer-rules.pro")
+    compileSdk = 36
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+    sourceSets {
+        getByName("main") {
+            java.srcDirs("src/main/kotlin")
+        }
+        getByName("androidTest") {
+            java.srcDirs("src/androidTest/kotlin")
+        }
+        getByName("test") {
+            java.srcDirs("src/test/kotlin")
         }
     }
 
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+    defaultConfig {
+        // API 26: scoped storage, hardware-backed keystore,
+        // exist. Capabilities beyond that (e.g. setUnlockedDeviceRequired,
+        // API 28) are reported dynamically through platformInfo.
+        minSdk = 26
     }
 
-    kotlinOptions {
-        jvmTarget = "1.8"
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all {
+                it.useJUnitPlatform()
+                it.outputs.upToDateWhen { false }
+                it.testLogging {
+                    events("passed", "skipped", "failed", "standardOut", "standardError")
+                    showStandardStreams = true
+                }
+            }
+        }
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
+// No third-party runtime dependencies: only platform AndroidKeyStore/JCA.
 dependencies {
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    testImplementation("org.jetbrains.kotlin:kotlin-test")
+    androidTestImplementation("androidx.test:core:1.6.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }

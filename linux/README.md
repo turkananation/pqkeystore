@@ -1,13 +1,23 @@
-# Linux C++ Scaffold for PQ Keystore
+# pqkeystore — Linux
 
-This directory contains the scaffolding for the Linux implementation of the `pqkeystore` Flutter plugin.
+Implements [platform channel contract v1](../doc/PLATFORM_CONTRACT.md) on the
+freedesktop Secret Service via libsecret. Design and limits: [ADR-0009](../doc/adr/0009-native-backend-designs.md).
 
-## Implementation Details
+| File | Role |
+| --- | --- |
+| `pq_keystore_plugin.cc` | Channel wiring; main-thread validation, exclusive worker thread |
+| `pq_keystore_contract.{h,cc}` | Argument validation (unit-tested, no D-Bus) |
+| `pq_keystore_secret_store.{h,cc}` | libsecret storage |
+| `test/pq_keystore_contract_test.cc` | Native unit tests |
 
-The implementation should integrate with `libsecret` to securely store and retrieve data.
+- Build dependency: `libsecret-1-dev` (Debian/Ubuntu) / `libsecret-devel` (Fedora), ≥ 0.18.
+- **No file fallback**: without a reachable Secret Service every operation returns `UNAVAILABLE`.
+- No optional capabilities are supported; all are rejected with `UNSUPPORTED_OPTION`.
+- The Secret Service does not isolate applications: any process in the user session can read these items.
 
-- **libsecret Integration**: Use the standard D-Bus Secret Service API via `libsecret`.
-- **File Fallback**: In environments without a secret service, gracefully fallback to storing encrypted files in XDG directories (`$XDG_DATA_HOME/yardenah/pqkeystore` or `~/.local/share/yardenah/pqkeystore`). Ensure fallback files have strictly controlled permissions (chmod `0600`).
-- **Methods**: Implement the necessary functionality in `pq_keystore_plugin.cc` and register the Flutter method channel correctly.
+Native unit tests (from `example/` after `flutter build linux --debug`):
 
-This remains a TODO for complete integration.
+```sh
+cmake --build build/linux/x64/debug --target pqkeystore_test
+build/linux/x64/debug/plugins/pqkeystore/pqkeystore_test
+```

@@ -1,9 +1,14 @@
+// Copyright 2024–2026 Yardenah / Turkana Nation. MIT license.
+
+#include "include/pqkeystore/pq_keystore_plugin_c_api.h"
+
+#include <flutter/plugin_registrar_windows.h>
+
 #include "pq_keystore_plugin.h"
 
-// TODO: Implement Windows plugin functionality
-// Uses DPAPI: CryptProtectData with CRYPTPROTECT_UI_FORBIDDEN
-// Storage path: %LOCALAPPDATA%\yardenah\pqkeystore\
-
-void PqKeystorePluginRegisterWithRegistrar(void* registrar) {
-  // TODO: Implement flutter registrar wiring
+void PqKeystorePluginCApiRegisterWithRegistrar(
+    FlutterDesktopPluginRegistrarRef registrar) {
+  pqkeystore::PqKeystorePlugin::RegisterWithRegistrar(
+      flutter::PluginRegistrarManager::GetInstance()
+          ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
 }

@@ -25,6 +25,8 @@ Treat the current unkeyed checksum as corruption detection only. Do not describe
 - Claim the checksum authenticates the index. Rejected because it is unkeyed and recomputable by an editor.
 - Remove the old record before writing the replacement. Rejected because a failed update can destroy valid state.
 
+> **Update 2026-10-07 (ADR-0010):** the unkeyed FNV index and sanitized names are removed from the codebase; the file store is now `hex(sha256(id)).pqks` files with the ID verified from record metadata. The atomicity and threat-model requirements above are all honored by the v1 implementation.
+
 ## Open Questions
 
 - Is the file backend intended for production desktop use or only development/testing?

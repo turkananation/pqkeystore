@@ -5,8 +5,7 @@ This roadmap reflects the source audit plus the local verification result record
 ## Existing Capabilities
 
 - Dart facade, versioned PQKS record codec, canonical AAD generation, memory/file backends, and a `PqForgeKeystoreCrypto` adapter exist.
-- Android has a partial native handler; iOS and macOS have partial Keychain handlers.
-- Linux and Windows plugin sources are stubs.
+- All five natives implement platform channel contract v1 (ADR-0002/0009, Proposed). Linux passes the contract suite locally; the other four await CI evidence.
 - On Dart 3.13.4 / Flutter 3.47.5, `tool/verify.sh` passes root/example resolution, analysis, and all 25 tests. Minimum SDK and native builds remain unverified.
 - The example app is simulated and does not import the package; the public constructor is not a confirmed blocker.
 

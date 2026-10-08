@@ -12,6 +12,14 @@ root and example dependency resolution, `dart analyze`, and all 25 tests. This
 does not verify the declared minimum SDK combination, any native build, or a
 production security claim.
 
+## Platform Branch (2026-10-07)
+
+`feat/five-platform-contract-v1` implements contract v1 on all five targets ([`doc/PLATFORM_CONTRACT.md`](doc/PLATFORM_CONTRACT.md), ADR-0009). Next steps:
+
+1. Run `.github/workflows/ci.yml` and fix the first-build issues for Android, iOS, macOS, and Windows. Windows and Swift have never been compiled.
+2. Provision a macOS signing identity for the data protection keychain.
+3. Get maintainer review of ADR-0002 and ADR-0009.
+
 ## Next Sequence
 
 1. Complete TRK-001 by validating the approved minimum Flutter/Dart combination

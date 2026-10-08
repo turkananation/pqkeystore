@@ -8,7 +8,7 @@ If you believe you have found a security vulnerability in `pqkeystore`, please r
 
 ## Security Model Overview
 
-The package is not currently production-ready. A `PqForgeKeystoreCrypto` adapter exists, but its provider security properties and the complete platform storage system are not independently verified. Android and Apple handlers are partial; Windows and Linux implementations are stubs. Do not assume biometric enforcement, hardware backing, or cross-platform OS isolation.
+The package is not currently production-ready. A `PqForgeKeystoreCrypto` adapter exists, but its provider security properties and the complete platform storage system are not independently verified. Native backends implement platform channel contract v1 on all five targets, but only Linux has on-device evidence so far (see `doc/PLATFORM.md`). Do not assume biometric enforcement, hardware backing, or cross-platform OS isolation.
 
 See [`doc/CLAIM_BOUNDARY.md`](doc/CLAIM_BOUNDARY.md) for current claims and non-claims and [`doc/TRACKER.md`](doc/TRACKER.md) for release gates. The stub crypto implementation provides no security and must never be used with real key material.
 
