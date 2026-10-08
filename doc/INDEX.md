@@ -19,7 +19,22 @@ Architecture, API, platform behaviour and security claims for `pqkeystore`.
 | [`PLATFORM.md`](PLATFORM.md) | Platform status matrix, enforceable options, integration requirements. |
 | [`INTEGRATION.md`](INTEGRATION.md) | How `pqkeystore` fits into the Yardenah stack (`pqforge`, `zeroize`, …). |
 | [`SECURITY.md`](SECURITY.md) | Threat model, trust boundaries, defense in depth. |
-| [`ROADMAP.md`](ROADMAP.md) | Project phases and release planning. |
+| [`ROADMAP.md`](ROADMAP.md) | The ten-version plan, 0.1.0 → 1.0.0. |
+
+## Implementation plans
+
+Detailed, ordered, test-by-test plans for the next three releases. Read these
+before writing code for 0.2.0, 0.3.0 or 0.4.0 — each cites the current
+`file:line` state it is planning against, so a stale line number means a stale
+document.
+
+| Document | Covers |
+| --- | --- |
+| [`IMPLEMENTATION/README.md`](IMPLEMENTATION/README.md) | Index and how to read the series. |
+| [`IMPLEMENTATION/CROSS-CUTTING.md`](IMPLEMENTATION/CROSS-CUTTING.md) | `StubKeystoreCrypto` removal, first-class key provenance from `pqforge`/`pqcrypto`/`pqthreshold`/`pqdga`, modern Dart and isolate policy, KDF parameter bounds. |
+| [`IMPLEMENTATION/020-platform-unlock.md`](IMPLEMENTATION/020-platform-unlock.md) | Per-write options, real `PlatformUnlock`, chained `PassphraseThenPlatform`, capability negotiation, Android user presence. |
+| [`IMPLEMENTATION/030-key-lifecycle.md`](IMPLEMENTATION/030-key-lifecycle.md) | `rotate`, `rewrap`, lineage, metadata v2 and its migration, write modes, the `delete` contract. |
+| [`IMPLEMENTATION/040-backup-restore-migration.md`](IMPLEMENTATION/040-backup-restore-migration.md) | Portability policy, the PQBA backup archive, store inspection, PQKS format migration. |
 
 ## Work tracking
 

@@ -8,6 +8,15 @@ Confirmed defects are in [`BUGS.md`](BUGS.md). Work items and release gates are
 in [`TRACKER.md`](TRACKER.md). All five registered platforms are required for
 v1.0.0 by [ADR-0001](adr/0001-five-platform-v1.md).
 
+> **0.2.0, 0.3.0 and 0.4.0 have implementation plans.** Each is an ordered,
+> file-by-file task list with a named test per assertion:
+> [`IMPLEMENTATION/CROSS-CUTTING.md`](IMPLEMENTATION/CROSS-CUTTING.md) (stub
+> removal, key provenance, Dart/isolate policy),
+> [`IMPLEMENTATION/020-platform-unlock.md`](IMPLEMENTATION/020-platform-unlock.md),
+> [`IMPLEMENTATION/030-key-lifecycle.md`](IMPLEMENTATION/030-key-lifecycle.md),
+> [`IMPLEMENTATION/040-backup-restore-migration.md`](IMPLEMENTATION/040-backup-restore-migration.md).
+> Start there rather than re-deriving the design.
+
 > **This roadmap creates no security claim.** It describes intended work.
 > What the package actually claims — and what it explicitly does not — lives in
 > [`CLAIM_BOUNDARY.md`](CLAIM_BOUNDARY.md), which must be updated *before* any
