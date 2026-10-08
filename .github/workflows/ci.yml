@@ -154,6 +154,13 @@ jobs:
           print(next(x["udid"] for k,v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone")))')
           xcrun simctl boot "$UDID"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+      - name: Verify Apple signing identity (CocoaPods only)
+        if: ${{ !matrix.spm }}
+        run: |
+          if ! security find-identity -v -p codesigning | grep -q "Apple Development"; then
+            echo "::error::No Apple development signing identity. The CocoaPods iOS build on macos runners does not run without a Development Team; use the SwiftPM row or provision DEVELOPMENT_TEAM/CODESIGNID."
+            exit 1
+          fi
       - name: Contract suite on simulator
         working-directory: example
         run: flutter test integration_test/platform_contract_test.dart -d ${{ steps.sim.outputs.udid }}
@@ -171,6 +178,12 @@ jobs:
       - name: Build
         working-directory: example
         run: flutter build macos --debug
+      - name: Verify Apple signing identity (macOS data protection keychain)
+        run: |
+          if ! security find-identity -v -p codesigning | grep -q "Apple Development"; then
+            echo "::error::No Apple development signing identity. The macOS data protection keychain requires a team-signed build; set TEAM_ID + provision the keychain."
+            exit 1
+          fi
       # The data protection keychain requires a keychain-access-groups
       # entitlement honoured by the signing identity. Without a team-signed
       # build this is expected to report UNAVAILABLE (-34018); the job stays
