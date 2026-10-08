@@ -1,15 +1,39 @@
 # Documentation Index
 
-Welcome to the `pqkeystore` documentation. This directory contains detailed information regarding the architecture, APIs, and security model of the package.
+Architecture, API, platform behaviour and security claims for `pqkeystore`.
 
-* [**ARCHITECTURE.md**](ARCHITECTURE.md): Detailed architectural design, component layering, and data flow.
-* [**API.md**](API.md): Comprehensive reference for the public classes, methods, and data structures.
-* [**PLATFORM.md**](PLATFORM.md): Per-platform status, enforceable options, integration requirements, and limitations.
-* [**PLATFORM_CONTRACT.md**](PLATFORM_CONTRACT.md): Normative platform channel contract v1.
-* [**INTEGRATION.md**](INTEGRATION.md): Guide on how `pqkeystore` fits into and interacts with the broader Yardenah ecosystem (e.g., `pqforge`, `zeroize`).
-* [**CLAIM_BOUNDARY.md**](CLAIM_BOUNDARY.md): Explicit documentation of what security properties are claimed and, crucially, what are *not* claimed.
-* [**SECURITY.md**](SECURITY.md): The comprehensive threat model, trust boundaries, and defense-in-depth strategy.
-* [**ROADMAP.md**](ROADMAP.md): Project phases, upcoming features, and release planning.
-* [**TRACKER.md**](TRACKER.md): Production-readiness work items, dependencies, acceptance criteria, and release gates.
-* [**BUGS.md**](BUGS.md): Confirmed code defects and verification criteria.
-* [**adr/**](adr/0001-five-platform-v1.md): Architecture decisions, including PQKS/pqforge format and key-lifecycle boundaries.
+## Start here
+
+* [`../README.md`](../README.md) — what the package is, quick start, status.
+* [`CLAIM_BOUNDARY.md`](CLAIM_BOUNDARY.md) — **what is claimed, what is not, and the evidence for each.** Read this before relying on any security property.
+* [`../AGENTS.md`](../AGENTS.md) — hard rules for contributors and agents.
+
+## Reference
+
+| Document | Contents |
+| --- | --- |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Component layering and data flow. |
+| [`API.md`](API.md) | Public classes, methods and data structures. |
+| [`FORMATS.md`](FORMATS.md) | Every on-disk byte layout: PQKS, PQNA, PQNW, keychain item, Secret Service item, file store v1, tombstones. |
+| [`PLATFORM_CONTRACT.md`](PLATFORM_CONTRACT.md) | Normative native channel contract v1. |
+| [`PLATFORM.md`](PLATFORM.md) | Platform status matrix, enforceable options, integration requirements. |
+| [`INTEGRATION.md`](INTEGRATION.md) | How `pqkeystore` fits into the Yardenah stack (`pqforge`, `zeroize`, …). |
+| [`SECURITY.md`](SECURITY.md) | Threat model, trust boundaries, defense in depth. |
+| [`ROADMAP.md`](ROADMAP.md) | Project phases and release planning. |
+
+## Work tracking
+
+| Document | Contents |
+| --- | --- |
+| [`TRACKER.md`](TRACKER.md) | Production-readiness items, dependencies, acceptance criteria, release gates. |
+| [`BUGS.md`](BUGS.md) | Confirmed defects, their evidence and their verification criteria. |
+| [`adr/`](adr/0001-five-platform-v1.md) | Architecture decision records (ADR-0001 … ADR-0010). |
+
+## Per-platform implementation notes
+
+Storage model, capabilities, error mapping, durability and explicit non-claims:
+
+* [`../android/README.md`](../android/README.md) — AndroidKeyStore, PQNA v2, chunking, API 26+.
+* [`../darwin/README.md`](../darwin/README.md) — iOS **and** macOS (shared source), keychain accounts, crash-safe replacement, signing.
+* [`../windows/README.md`](../windows/README.md) — DPAPI, PQNW, atomic replace, isolation limits.
+* [`../linux/README.md`](../linux/README.md) — Secret Service, no silent file fallback, provider limits.

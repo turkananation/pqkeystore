@@ -81,6 +81,12 @@ final class PqKeystore {
 
   /// Retrieve and unwrap key material, passing plaintext to [body].
   ///
+  /// Before the crypto adapter is called the record is re-validated: the
+  /// decoded metadata ID must be the requested ID and the stored AAD must
+  /// equal the canonical AAD recomputed from the decoded metadata. A record
+  /// whose metadata was altered while the AAD was preserved is rejected with
+  /// [FormatError] and unwrap is never invoked (ADR-0006, BUG-005).
+  ///
   /// The plaintext buffer is zeroed after [body] completes or throws.
   /// This is the **preferred** way to access key material.
   Future<KsResult<T>> use<T>(
@@ -94,6 +100,11 @@ final class PqKeystore {
         return KsFailure(NotFound(id));
       }
 
+      final identityError = _validateRecordIdentity(id, record);
+      if (identityError != null) {
+        return KsFailure(identityError);
+      }
+
       final plaintext = await _crypto.unwrap(
         record.ciphertext,
         record.aad,
@@ -102,7 +113,18 @@ final class PqKeystore {
         unlock,
         record.kdfParams,
       );
-      final secretPlaintext = SecretBytes.fromUint8List(plaintext);
+
+      // SECURITY (AGENTS.md rule 10): `SecretBytes.fromUint8List` always makes
+      // a copy and never takes ownership, so `plaintext` is a live secret that
+      // only this scope owns. Wipe it the moment the copy exists, including
+      // when the copy itself throws, or it survives in the heap until GC.
+      final SecretBytes secretPlaintext;
+      try {
+        secretPlaintext = SecretBytes.fromUint8List(plaintext);
+      } finally {
+        secureZero(plaintext);
+      }
+
       final callbackPlaintext = secretPlaintext.use(Uint8List.fromList);
 
       try {
@@ -110,9 +132,7 @@ final class PqKeystore {
         return KsSuccess(result);
       } finally {
         // Clear the callback copy before disposing the secret buffer.
-        for (var i = 0; i < callbackPlaintext.length; i++) {
-          callbackPlaintext[i] = 0;
-        }
+        secureZero(callbackPlaintext);
         secretPlaintext.dispose();
       }
     } on PqKeystoreError catch (e) {
@@ -120,6 +140,39 @@ final class PqKeystore {
     } catch (e) {
       return KsFailure(CryptoError(e.toString()));
     }
+  }
+
+  /// Verifies that [record] is bound to [id] and that its stored AAD is the
+  /// canonical encoding of its own metadata.
+  ///
+  /// Returns null when the record is consistent, otherwise the error to
+  /// surface. This runs before any expensive or key-revealing operation so a
+  /// tampered record can never reach the crypto adapter.
+  static FormatError? _validateRecordIdentity(KeyId id, SealedRecord record) {
+    if (record.metadata.id != id) {
+      return FormatError(
+        'Record ID ${record.metadata.id.value} does not match requested $id',
+      );
+    }
+    final expectedAad = canonicalAad(record.metadata);
+    if (!_bytesEqual(expectedAad, record.aad)) {
+      return const FormatError(
+        'Stored AAD is not the canonical encoding of the record metadata',
+      );
+    }
+    return null;
+  }
+
+  /// Length-checked, shape-independent byte comparison.
+  static bool _bytesEqual(Uint8List a, Uint8List b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    var diff = 0;
+    for (var i = 0; i < a.length; i++) {
+      diff |= a[i] ^ b[i];
+    }
+    return diff == 0;
   }
 
   /// Delete the record identified by [id].

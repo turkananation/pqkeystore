@@ -6,16 +6,22 @@ All five registered targets are required for v1 ([ADR-0001](adr/0001-five-platfo
 - Per-platform design and limits: [ADR-0009](adr/0009-native-backend-designs.md) (Proposed)
 - Claims: [`CLAIM_BOUNDARY.md`](CLAIM_BOUNDARY.md)
 - On-disk formats for every backend: [`FORMATS.md`](FORMATS.md)
+- Per-platform implementation detail, capabilities and non-claims: [`android/README.md`](../android/README.md), [`darwin/README.md`](../darwin/README.md) (iOS + macOS), [`windows/README.md`](../windows/README.md), [`linux/README.md`](../linux/README.md)
 
 ## Current Status
 
 | Platform | Mechanism | Source | Evidence | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| Android | AndroidKeyStore AES-256-GCM, files in `noBackupFilesDir` | Contract v1 | JVM unit tests and emulator suite (API 26/28/35) defined in CI; **not yet run** | Pending CI |
-| iOS | Data protection keychain | Contract v1 (shared `darwin/`) | Simulator suite (CocoaPods + SwiftPM) defined in CI; **not yet run** | Pending CI |
-| macOS | Data protection keychain | Contract v1 (shared `darwin/`) | Suite defined in CI; needs a signing identity honoring `keychain-access-groups` | Pending CI and signing |
-| Windows | DPAPI (user scope) files under `%LOCALAPPDATA%` | Contract v1 | Contract validator unit-tested locally (cross-compiled on Linux); DPAPI store and suite defined in CI; **not yet run** | Pending CI |
-| Linux | Secret Service (libsecret), no fallback | Contract v1 | Native unit tests 6/6; contract suite 29/29 against gnome-keyring; no-Secret-Service test passes (local, 2026-10-07) | Local evidence; CI pending |
+| Android | AndroidKeyStore AES-256-GCM, files in `noBackupFilesDir`, PQNA v2 | Contract v1 | CI run 37770096113: build + JVM unit tests + on-device contract suite green on API 26, 28 and 35 | **Supported** |
+| iOS | Data protection keychain | Contract v1 (shared `darwin/`) | SwiftPM: simulator contract suite green in CI. CocoaPods: build OK, suite gated on a signing identity | SwiftPM **supported**; CocoaPods pending signing |
+| macOS | Data protection keychain | Contract v1 (shared `darwin/`) | Builds in CI, then fails fast with an explicit "no Apple development signing identity" error; needs a team-signed build honouring `keychain-access-groups` | Pending signing identity |
+| Windows | DPAPI (user scope) files under `%LOCALAPPDATA%`, PQNW | Contract v1 | CI run 37770096113: build + native unit tests + on-device contract suite green | **Supported** |
+| Linux | Secret Service (libsecret), no fallback | Contract v1 | CI run 37770096113: build + native unit tests + contract suite against gnome-keyring green; a separate job proves there is no silent file fallback | **Supported** |
+
+"Supported" here means the shared contract suite passes against the real native
+implementation in CI. It is a behavioural-parity statement, not a claim that one
+platform's storage is as strong as another's — see the isolation note below and
+[`CLAIM_BOUNDARY.md`](CLAIM_BOUNDARY.md).
 
 ## Enforceable Options
 
@@ -29,6 +35,12 @@ Reported per device via `PlatformKeystoreBackend.platformInfo().supportedOptions
 | `accessibility.afterFirstUnlock` | FBE + secure lock screen | Yes | No | No |
 | `synchronizable` | No | Yes (iCloud Keychain) | No | No |
 
+**Isolation is not parity.** Linux (Secret Service) and Windows (DPAPI user
+scope) provide user-account-level protection only: any process running as the
+same user can read those records. Android namespaces keystore keys per UID and
+Apple scopes keychain items to the app's signing identity, but neither is
+claimed as a hardware-backed guarantee.
+
 What `platformDefault` means:
 
 - **Android**: AndroidKeyStore key, no unlock binding; files live in credential-encrypted storage.
@@ -38,7 +50,7 @@ What `platformDefault` means:
 
 ## Integration Requirements
 
-- **Android**: `minSdk` 24. No permissions needed. Records are excluded from backup by design.
+- **Android**: `minSdk` 26. No permissions needed. Records are excluded from backup by design. CI covers API 26 (the floor), 28 (`setUnlockedDeviceRequired`) and 35 (current).
 - **iOS**: Add `NSFaceIDUsageDescription` to `Info.plist` if `requireBiometric` or `requireUserPresence` is used.
 - **macOS**: Add a `keychain-access-groups` entitlement, e.g. `$(AppIdentifierPrefix)<bundle id>`, and sign with a team identity. Without it, every operation returns `UNAVAILABLE` (`errSecMissingEntitlement`). The legacy file keychain is never used as a fallback.
 - **Windows**: No extra setup. Data is namespaced by executable name.

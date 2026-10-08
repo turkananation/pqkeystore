@@ -262,13 +262,11 @@ public class PqKeystorePlugin: NSObject, FlutterPlugin {
     var seen = Set<[UInt8]>()
     var ids: [String] = []
     for attributes in (out as? [[String: Any]]) ?? [] {
-      if let raw = attributes[kSecAttrAccount as String] as? String {
-        NSLog("pqks listIds: raw=%@ decoded=%@", raw, Self.decodeAccount(raw) ?? "<nil>")
-        if let id = Self.decodeAccount(raw),
-          Contract.isValidId(id), seen.insert(Array(id.utf8)).inserted
-        {
-          ids.append(id)
-        }
+      if let raw = attributes[kSecAttrAccount as String] as? String,
+        let id = Self.decodeAccount(raw),
+        Contract.isValidId(id), seen.insert(Array(id.utf8)).inserted
+      {
+        ids.append(id)
       }
     }
     return ids
