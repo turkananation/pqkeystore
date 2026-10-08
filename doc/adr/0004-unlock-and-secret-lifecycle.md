@@ -5,7 +5,15 @@
 
 ## Context
 
-The facade rejects `PlatformUnlock` for PQKS v1. `PqForgeKeystoreCrypto` accepts passphrase-based wrapping, but `PassphraseThenPlatform` is currently handled as passphrase-only. `PlatformStoreOptions` are not consistently consumed by native code. In the resolved `zeroize` API, `SecretBytes.fromUint8List` always copies and leaves the caller's buffer owned by the caller; the facade disposes the copy but does not currently clear the original plaintext returned by `unwrap`. Pure Dart also cannot guarantee erasure of garbage-collected copies. The adapter converts passphrase bytes to a Dart `String`, which cannot be explicitly wiped.
+The facade rejects `PlatformUnlock` for PQKS v1. `PqForgeKeystoreCrypto` accepts passphrase-based wrapping, but `PassphraseThenPlatform` is currently handled as passphrase-only. `PlatformStoreOptions` are not consistently consumed by native code.
+
+In the resolved `zeroize` API, `SecretBytes.fromUint8List` **always copies and never takes ownership**: it states so in its own memory-safety contract. The facade originally disposed the copy but did **not** clear the original plaintext buffer returned by `unwrap`, so key material stayed live in the heap until the garbage collector reclaimed it — readable from swap, core dumps and post-mortem debugging. Pure Dart still cannot guarantee erasure of garbage-collected copies. The adapter converts passphrase bytes to a Dart `String`, which cannot be explicitly wiped.
+
+## Update 2026-10-08
+
+The unwrap-output gap is closed. `PqKeystore.use()` now takes ownership of the buffer returned by `PqKeystoreCrypto.unwrap`, copies it into a `SecretBytes`, and wipes the source with `secureZero` immediately afterwards — inside a `finally`, so the source is cleared even if the copy throws. The callback copy is wiped with `secureZero` rather than a hand-written loop, because `secureZero` is `@pragma('vm:never-inline')` with opaque read anchors and therefore survives Dead Store Elimination in AOT builds. This is now a cardinal project rule: [AGENTS.md rule 10](../../AGENTS.md). `test/secret_lifetime_test.dart` captures the exact buffer instance handed to the facade and asserts it is zeroed on the success path, the throwing-callback path, and the validation-rejection path (where no buffer is produced at all).
+
+Still not solved, and still not claimed: GC-moved copies of a buffer, the immutable `String` holding the passphrase inside the adapter, and OS-level page remanence. Rule 10 deliberately does not widen into those guarantees.
 
 ## Decision
 

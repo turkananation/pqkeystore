@@ -113,7 +113,18 @@ final class PqKeystore {
         unlock,
         record.kdfParams,
       );
-      final secretPlaintext = SecretBytes.fromUint8List(plaintext);
+
+      // SECURITY (AGENTS.md rule 10): `SecretBytes.fromUint8List` always makes
+      // a copy and never takes ownership, so `plaintext` is a live secret that
+      // only this scope owns. Wipe it the moment the copy exists, including
+      // when the copy itself throws, or it survives in the heap until GC.
+      final SecretBytes secretPlaintext;
+      try {
+        secretPlaintext = SecretBytes.fromUint8List(plaintext);
+      } finally {
+        secureZero(plaintext);
+      }
+
       final callbackPlaintext = secretPlaintext.use(Uint8List.fromList);
 
       try {
@@ -121,9 +132,7 @@ final class PqKeystore {
         return KsSuccess(result);
       } finally {
         // Clear the callback copy before disposing the secret buffer.
-        for (var i = 0; i < callbackPlaintext.length; i++) {
-          callbackPlaintext[i] = 0;
-        }
+        secureZero(callbackPlaintext);
         secretPlaintext.dispose();
       }
     } on PqKeystoreError catch (e) {
