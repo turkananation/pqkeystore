@@ -36,6 +36,12 @@ document.
 | [`IMPLEMENTATION/030-key-lifecycle.md`](IMPLEMENTATION/030-key-lifecycle.md) | `rotate`, `rewrap`, lineage, metadata v2 and its migration, write modes, the `delete` contract. |
 | [`IMPLEMENTATION/040-backup-restore-migration.md`](IMPLEMENTATION/040-backup-restore-migration.md) | Portability policy, the PQBA backup archive, store inspection, PQKS format migration. |
 
+## Upstream dependencies
+
+| Document | Contents |
+| --- | --- |
+| [`UPSTREAM.md`](UPSTREAM.md) | What `pqkeystore` needs from `pqforge`, `pqthreshold`, `pqcrypto`, `pqdga` and `zeroize`: verified facts, open work, blocked decisions, and defects found in our own merged docs. |
+
 ## Work tracking
 
 | Document | Contents |
