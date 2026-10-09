@@ -1,7 +1,8 @@
 name: pqkeystore
 description: >-
-  Post-quantum key management layer for Dart/Flutter.
-  Best-in-class custody for ML-KEM, ML-DSA, SLH-DSA, hybrid, and threshold keys.
+  Post-quantum key management for Dart and Flutter. Custody for ML-KEM, ML-DSA,
+  SLH-DSA, hybrid, and threshold keys, with OS keychain backends on all five
+  platforms.
 version: 0.1.0-dev.1
 publish_to: 'none' # Remove when ready to publish on pub.dev
 homepage: https://yardenah.com
