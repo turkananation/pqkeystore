@@ -39,6 +39,29 @@ someone to do unnecessary or harmful work.
 
 ---
 
+## Published status, verified against pub.dev
+
+Checked via the pub.dev API, not the repository docs. The two disagree, and the
+repository docs are the wrong ones.
+
+| Package | Local checkout | On pub.dev | Consequence |
+| --- | --- | --- | --- |
+| `crypto_shared` | 1.0.0 (`pqthreshold/packages/crypto_shared/`) | **1.0.0**, published 2026-09-26 | Already a dependency of `pqkeystore`. `README.md:182` and `CHANGELOG.md:5-6` are stale. |
+| `zeroize` | 0.2.0 (PR #1 merged) | 0.1.0 | The merged `SecretTransfer` is not usable by a dependent until 0.2.0 is published. |
+| `pqcrypto` | 0.4.2 | 0.4.2 | — |
+| `pqforge` | 0.4.6 → 0.4.7 (PR #26) | 0.4.6 | `Argon2Limits` is unavailable to dependents until published. |
+| `pqthreshold` | 1.0.1 → 1.1.0 (PR #1) | 1.0.1 | `ShareMetadata` is unavailable until published. |
+| `pqdga` | **0.1.0** | **0.1.1** | The local checkout is **behind** what is published. Reconcile before any work. |
+| `pqtransport` | 0.1.0 | 0.1.0 | — |
+| `swissarmyknife` | 0.1.0 | 0.1.0 | — |
+| `pqkeystore` | 0.1.0-dev.1 | not published | `publish_to: 'none'` as intended. |
+
+The published `crypto_shared-1.0.0` archive contains `lib/src/share_wrapping.dart`
+with the canonical ids `threshold-share` / `pqthreshold/pqth-share-v1`, and pins
+`pqthreshold: ^1.0.1` and `pqforge: ^0.4.5`. Those two pins mean `crypto_shared`
+must be bumped before it can use anything added in `pqthreshold` 1.1.0 or
+`pqforge` 0.4.7.
+
 ## Verified already satisfied
 
 | Fact | Evidence |
@@ -119,7 +142,8 @@ Status: **open** = not started. Nothing in this table is claimed as done.
 | --- | --- | --- | --- |
 | UT-1 | Provide a **metadata-only decode** for a share: read `version`, `kind`, `scheme`, `t`, `n`, `participantId`, `index`, `ceremonyId` **without** materializing the secret scalar | reaching `t`/`n`/`index`/`ceremonyId` today requires `Share.fromBytes`, which builds a live `SecretBuffer` (`lib/src/serialization/share_codec.dart:55-62`) | **This blocks a `pqkeystore` roadmap item.** 0.5.0 says "validate share metadata at `putShare` time"; that is impossible before sealing today, and doing it by unwrapping first inverts the custody model `pqthreshold`'s own `doc/TERMINAL.md:168-169` insists on. |
 | UT-2 | Make share disposal reachable: `disposeSecret()` is `@internal`, `Share` does not implement `Disposable` | `lib/src/sharing/share.dart:80` | An unwrapped `Share` inside `pqkeystore` is a wipe-discipline liability under AGENTS rule 10. |
-| UT-3 | Publish, or explicitly deprecate, `packages/crypto_shared` | `pqthreshold/packages/crypto_shared/`; `README.md:182`, `CHANGELOG.md:5-6` say unpublished | It already defines the custodian bridge `pqkeystore` planned to invent, including canonical ids `threshold-share` and `pqthreshold/pqth-share-v1` (`lib/src/share_wrapping.dart:11,14`). |
+| UT-3 | ~~Publish `crypto_shared`~~ — **already published; the repo docs are stale.** `crypto_shared` **1.0.0** is live on pub.dev (2026-09-26) | Verified against the pub.dev API and the published archive, not the repo docs. `README.md:182` and `CHANGELOG.md:5-6` still call it unpublished | **Correction.** `pqkeystore` already depends on the published `crypto_shared: ^1.0.0` (`pubspec.yaml:22`). Fix the stale docs. |
+| UT-6 | Bump `crypto_shared` so it can consume `pqthreshold` 1.1.0 | published `crypto_shared-1.0.0` pins `pqthreshold: ^1.0.1` | Its `unwrapShareWithPassphrase` decodes a full `Share`, materializing the scalar. With `ShareMetadata` it could read metadata without it. Needs a version bump to depend on the new API. |
 | UT-4 | Settle and document the participant-index convention | `Share.index` is 1-based (`share.dart:37`, validated `1..n` at `:62-64`); `MlDsaShare.mithrilPartyId` is 0-based (`ml_dsa_share.dart:98`) | `pqkeystore`'s `ThresholdMeta.participantIndex` is currently documented `[0, n)` and is **wrong** relative to `Share`. See D-1. |
 | UT-5 | Export a standalone validator for `1 <= index <= n` and the `participantId` length bound | both live inside `@internal Share.create` (`share.dart:62-64,82-86`) | `pqkeystore` would otherwise re-implement them. |
 
@@ -154,7 +178,7 @@ Dependency order, because each block is blocked by the one above it.
 3. **UQ-1** — `pqcrypto` barrel export. Trivial, unblocks D-2's re-expression.
 4. **UQ-2/3/4** — `pqcrypto` zeroization. **Blocked on the A-vs-B decision.**
 5. **UF-2, UF-3, UF-4** — `pqforge` ratcheting + custody boundary.
-6. **UT-1 … UT-5** — `pqthreshold`. UT-1 and UT-3 gate the `pqkeystore` 0.5.0 plan.
+6. **UT-1 … UT-5** — `pqthreshold`. UT-1 gates the `pqkeystore` 0.5.0 plan; UT-6 follows it.
 7. **D-1 … D-4** — `pqkeystore` doc corrections. D-1 is independent and can land immediately.
 8. **UG-1, UG-2** — `pqdga`, after its own maintainer decides on UG-2.
 
