@@ -18,6 +18,7 @@
 * `doc/FORMATS.md` is the single reference for on-disk layouts (PQKS, PQNA, PQNW, file store v1, tombstones).
 * Shared contract suite (pure-Dart reference + on-device `integration_test`), native unit tests, five-platform CI workflow.
 * Example app runners for all five platforms; the example is now a real package consumer.
+* Dependency floors: `pqforge` `^0.4.6` → `^0.4.7`, `pqthreshold` `^1.0.1` → `^1.1.0`, `zeroize` `^0.1.0` → `^0.2.0`, all published. No behavioural change in this package: the floors pick up pqforge's Argon2id parameter range-checks and `package:zeroize`-routed wipes, pqthreshold's typed share-header validation, and zeroize's isolate-safe `SecretBuffer` transfers. `flutter analyze` clean; all 143 tests pass against the published versions.
 
 ## 0.1.0-dev.1
 
