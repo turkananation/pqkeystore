@@ -24,10 +24,10 @@ dependencies:
   flutter:
     sdk: flutter
   meta: ^1.12.0
-  pqforge: ^0.4.6
-  pqthreshold: ^1.0.1
+  pqforge: ^0.4.7
+  pqthreshold: ^1.1.0
   swissarmyknife: ^0.1.0
-  zeroize: ^0.1.0
+  zeroize: ^0.2.0
 
 dev_dependencies:
   flutter_lints: ^5.0.0
