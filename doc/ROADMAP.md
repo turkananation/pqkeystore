@@ -176,8 +176,11 @@ class; unsupported combinations fail loudly.
 **Theme:** shares are first-class, but reconstruction is never implicit.
 
 - **Share metadata validation.** Bound `t` and `n`, validate
-  `participantIndex ∈ [0, n)`, require a ceremony id, and reject inconsistent
-  metadata at `putShare` time.
+  `participantIndex ∈ [1, n]`, require a ceremony id, and reject inconsistent
+  metadata at `putShare` time. **Partially landed ahead of the release:** the
+  bounds check and its tests are in `main` now (D-1 below); what remains is
+  validating against `pqthreshold`'s own parsed share bytes rather than the
+  caller's declared metadata.
 - **`pqthreshold` interoperability, as a boundary.** `pqkeystore` stores opaque
   sealed shares; `pqthreshold` owns ceremony correctness and any
   reconstruction.

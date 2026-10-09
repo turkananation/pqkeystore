@@ -25,9 +25,50 @@ final class ThresholdMeta {
   final String schemeId;
   final int t;
   final int n;
+
+  /// The participant's **1-based** Shamir evaluation index, in `1..n`.
+  ///
+  /// 1-based, because that is what `pqthreshold.Share.index` is: it is
+  /// validated `1..n` on construction there. A 0-based value here would name a
+  /// different participant than the share it describes. Note that
+  /// `pqthreshold`'s experimental `MlDsaShare.mithrilPartyId` is the *other*
+  /// convention (0-based); see [`../../doc/UPSTREAM.md`](../../doc/UPSTREAM.md)
+  /// UT-4.
+  ///
+  /// Not validated by this constructor, because it is `const`. Callers go
+  /// through [PqKeystore.putShare](pq_keystore.dart), which validates.
   final int participantIndex;
   final String ceremonyId;
   final String? rosterHashHex;
+
+  /// Checks that this metadata is internally consistent.
+  ///
+  /// Returns `null` when it is, otherwise a message naming the first problem
+  /// found. Enforced by `PqKeystore.putShare`, so an inconsistent share record
+  /// is refused before it is written rather than at reconstruction time.
+  ///
+  /// The bounds mirror `pqthreshold`'s own construction-time validation:
+  /// `t >= 1`, `n >= 1`, `t <= n`, `participantIndex` in `1..n`, and a
+  /// non-empty ceremony id.
+  String? validate() {
+    if (t < 1) {
+      return 'threshold t must be at least 1, got $t';
+    }
+    if (n < 1) {
+      return 'participant count n must be at least 1, got $n';
+    }
+    if (t > n) {
+      return 'threshold t ($t) must not exceed participant count n ($n)';
+    }
+    if (participantIndex < 1 || participantIndex > n) {
+      return 'participantIndex $participantIndex is out of range '
+          '1..$n; pqthreshold.Share.index is 1-based';
+    }
+    if (ceremonyId.isEmpty) {
+      return 'ceremonyId must not be empty';
+    }
+    return null;
+  }
 
   Map<String, dynamic> toJson() => {
         'schemeId': schemeId,

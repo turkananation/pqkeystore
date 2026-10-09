@@ -207,7 +207,7 @@ void main() {
           schemeId: 'frost-v1',
           t: 2,
           n: 3,
-          participantIndex: 0,
+          participantIndex: 1,
           ceremonyId: 'ceremony-001',
         ),
       );
@@ -283,4 +283,187 @@ void main() {
       );
     });
   });
+
+  group('PqKeystore threshold metadata validation', () {
+    KeyMetadata shareMeta({
+      int t = 2,
+      int n = 3,
+      int participantIndex = 1,
+      String ceremonyId = 'ceremony-003',
+      String id = 'share-under-test',
+    }) =>
+        KeyMetadata(
+          id: KeyId(id),
+          kind: KeyKind.thresholdShare,
+          algorithm: 'FROST-Ed25519',
+          createdAt: DateTime.utc(2025, 1, 1),
+          threshold: ThresholdMeta(
+            schemeId: 'frost-v1',
+            t: t,
+            n: n,
+            participantIndex: participantIndex,
+            ceremonyId: ceremonyId,
+          ),
+        );
+
+    test('accepts 1-based participantIndex at both ends of 1..n', () async {
+      final unlock = PassphraseUnlock(passphrase());
+
+      for (final index in <int>[1, 3]) {
+        final result = await keystore.putShare(
+          shareMeta(participantIndex: index, id: 'share-$index'),
+          keyMaterial(),
+          unlock,
+        );
+        expect(result, isA<KsSuccess<void>>(),
+            reason: 'participantIndex $index must be accepted for n=3');
+      }
+    });
+
+    test('rejects participantIndex 0 — pqthreshold.Share.index is 1-based',
+        () async {
+      final unlock = PassphraseUnlock(passphrase());
+
+      final result = await keystore.putShare(
+        shareMeta(participantIndex: 0),
+        keyMaterial(),
+        unlock,
+      );
+
+      expect(result, isA<KsFailure<void>>());
+      result.when(
+        success: (_) => fail('Expected PolicyError'),
+        failure: (error) {
+          expect(error, isA<PolicyError>());
+          final message = (error as PolicyError).message;
+          expect(message, contains('participantIndex 0'));
+          expect(message, contains('1..3'));
+          expect(message, contains('1-based'));
+        },
+      );
+    });
+
+    test('rejects participantIndex above n', () async {
+      final unlock = PassphraseUnlock(passphrase());
+
+      final result = await keystore.putShare(
+        shareMeta(participantIndex: 4),
+        keyMaterial(),
+        unlock,
+      );
+
+      expect(result, isA<KsFailure<void>>());
+      result.when(
+        success: (_) => fail('Expected PolicyError'),
+        failure: (error) =>
+            expect((error as PolicyError).message, contains('out of range 1..3')),
+      );
+    });
+
+    test('rejects t greater than n', () async {
+      final unlock = PassphraseUnlock(passphrase());
+
+      final result = await keystore.putShare(
+        shareMeta(t: 4, n: 3, id: 'share-t-too-big'),
+        keyMaterial(),
+        unlock,
+      );
+
+      expect(result, isA<KsFailure<void>>());
+      result.when(
+        success: (_) => fail('Expected PolicyError'),
+        failure: (error) =>
+            expect((error as PolicyError).message, contains('must not exceed')),
+      );
+    });
+
+    test('rejects t below 1', () async {
+      final unlock = PassphraseUnlock(passphrase());
+
+      final result = await keystore.putShare(
+        shareMeta(t: 0, id: 'share-t-zero'),
+        keyMaterial(),
+        unlock,
+      );
+
+      expect(result, isA<KsFailure<void>>());
+      result.when(
+        success: (_) => fail('Expected PolicyError'),
+        failure: (error) =>
+            expect((error as PolicyError).message, contains('at least 1')),
+      );
+    });
+
+    test('rejects an empty ceremonyId', () async {
+      final unlock = PassphraseUnlock(passphrase());
+
+      final result = await keystore.putShare(
+        shareMeta(ceremonyId: '', id: 'share-no-ceremony'),
+        keyMaterial(),
+        unlock,
+      );
+
+      expect(result, isA<KsFailure<void>>());
+      result.when(
+        success: (_) => fail('Expected PolicyError'),
+        failure: (error) =>
+            expect((error as PolicyError).message, contains('ceremonyId')),
+      );
+    });
+
+    test('an invalid record is never written to the backend', () async {
+      // A backend that records every write, so "nothing reached the backend"
+      // is observable rather than inferred.
+      var writes = 0;
+      final counting = _CountingBackend(writes: () => writes++);
+      final subject = PqKeystore(
+        backend: counting,
+        crypto: StubKeystoreCrypto(),
+      );
+
+      final result = await subject.putShare(
+        shareMeta(participantIndex: 0, id: 'share-never-written'),
+        keyMaterial(),
+        PassphraseUnlock(passphrase()),
+      );
+
+      expect(result, isA<KsFailure<void>>());
+      expect(writes, 0,
+          reason: 'validation must happen before the backend is touched');
+      expect(await counting.getSealed(const KeyId('share-never-written')),
+          isNull);
+    });
+
+    test('validate() returns null for a consistent record', () {
+      expect(shareMeta().threshold!.validate(), isNull);
+    });
+  });
+}
+
+/// Wraps a [MemoryKeystoreBackend] and counts writes, so a test can assert
+/// that a rejected operation never reached the storage layer.
+final class _CountingBackend implements PqKeystoreBackend {
+  _CountingBackend({required this.writes});
+
+  final void Function() writes;
+  final MemoryKeystoreBackend _inner = MemoryKeystoreBackend();
+
+  @override
+  Future<void> putSealed(KeyId id, SealedRecord record) async {
+    writes();
+    return _inner.putSealed(id, record);
+  }
+
+  @override
+  Future<SealedRecord?> getSealed(KeyId id) => _inner.getSealed(id);
+
+  @override
+  Future<bool> delete(KeyId id) => _inner.delete(id);
+
+  @override
+  Future<bool> contains(KeyId id) => _inner.contains(id);
+
+  @override
+  Future<List<SealedRecord>> list({KeyKind? kind, String? purpose}) =>
+      _inner.list(kind: kind, purpose: purpose);
 }

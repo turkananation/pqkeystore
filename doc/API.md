@@ -54,6 +54,9 @@ Future<KsResult<T>> useShare<T>(
 * `KeyKind` classifies key material.
 * `KeyMetadata` includes `id`, `kind`, `algorithm`, `createdAt`, and optional `purpose`, `version`, `rotatedFrom`, `threshold`, and `tags`.
 * `ThresholdMeta` includes `schemeId`, `t`, `n`, `participantIndex`, `ceremonyId`, and optional `rosterHashHex`.
+  `participantIndex` is **1-based**, matching `pqthreshold.Share.index`. `putShare`
+  validates `1 <= t <= n`, `participantIndex` in `1..n`, and a non-empty
+  `ceremonyId`, returning `PolicyError` before the backend is touched.
 * `SealedRecord` is the versioned PQKS record persisted by a backend. PQKS serializes metadata in cleartext; deployments should treat purpose, tags, threshold details, and identifiers as potentially sensitive. Backend protection varies.
 
 ## Unlock Types
