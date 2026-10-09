@@ -1,8 +1,16 @@
 import 'key_id.dart';
 import 'key_kind.dart';
 
+/// Describes the threshold scheme a stored share belongs to.
+///
+/// Attached to `KeyMetadata.threshold` and validated by `PqKeystore.putShare`
+/// before a share is written. The bounds mirror `pqthreshold`'s own
+/// construction-time validation rather than being invented here, so metadata this
+/// package accepts is metadata `pqthreshold` can act on.
+///
+/// `participantIndex` is **1-based**, matching `pqthreshold.Share.index`.
 final class ThresholdMeta {
-
+  /// Creates threshold metadata.
   const ThresholdMeta({
     required this.schemeId,
     required this.t,
@@ -71,17 +79,34 @@ final class ThresholdMeta {
   }
 
   Map<String, dynamic> toJson() => {
-        'schemeId': schemeId,
-        't': t,
-        'n': n,
-        'participantIndex': participantIndex,
-        'ceremonyId': ceremonyId,
-        if (rosterHashHex != null) 'rosterHashHex': rosterHashHex,
-      };
+    'schemeId': schemeId,
+    't': t,
+    'n': n,
+    'participantIndex': participantIndex,
+    'ceremonyId': ceremonyId,
+    if (rosterHashHex != null) 'rosterHashHex': rosterHashHex,
+  };
 }
 
+/// Everything known about a record except its key material.
+///
+/// Metadata is **stored in cleartext** and is covered by the record's
+/// authenticated data. It is readable by anyone who can read the store, so it
+/// must never contain secrets or sensitive personal data — see
+/// [`../../doc/CLAIM_BOUNDARY.md`](../../doc/CLAIM_BOUNDARY.md).
+///
+/// Because the canonical AAD is derived from this object, changing any field
+/// changes the AAD. A record whose metadata is edited in place will therefore
+/// fail its own identity check on read. That is deliberate: it means tampering
+/// with metadata is detectable, at the cost of metadata not being editable
+/// without rewriting the record.
 final class KeyMetadata {
-
+  /// Creates metadata for a record.
+  ///
+  /// [id] is the key the record is stored under, [kind] and [algorithm] describe
+  /// the material, and [createdAt] is application-supplied. [rotatedFrom] and
+  /// [threshold] are only meaningful for lifecycle and threshold use
+  /// respectively.
   const KeyMetadata({
     required this.id,
     required this.kind,
@@ -102,11 +127,17 @@ final class KeyMetadata {
       createdAt: DateTime.parse(json['createdAt'] as String),
       purpose: json['purpose'] as String?,
       version: json['version'] as int? ?? 1,
-      rotatedFrom: json['rotatedFrom'] != null ? KeyId(json['rotatedFrom'] as String) : null,
-      threshold: json['threshold'] != null
-          ? ThresholdMeta.fromJson(Map<String, dynamic>.from(json['threshold'] as Map))
+      rotatedFrom: json['rotatedFrom'] != null
+          ? KeyId(json['rotatedFrom'] as String)
           : null,
-      tags: json['tags'] != null ? Map<String, String>.from(json['tags'] as Map) : {},
+      threshold: json['threshold'] != null
+          ? ThresholdMeta.fromJson(
+              Map<String, dynamic>.from(json['threshold'] as Map),
+            )
+          : null,
+      tags: json['tags'] != null
+          ? Map<String, String>.from(json['tags'] as Map)
+          : {},
     );
   }
   final KeyId id;
@@ -120,14 +151,14 @@ final class KeyMetadata {
   final Map<String, String> tags;
 
   Map<String, dynamic> toJson() => {
-        'id': id.value,
-        'kind': kind.name,
-        'algorithm': algorithm,
-        'createdAt': createdAt.toIso8601String(),
-        if (purpose != null) 'purpose': purpose,
-        'version': version,
-        if (rotatedFrom != null) 'rotatedFrom': rotatedFrom!.value,
-        if (threshold != null) 'threshold': threshold!.toJson(),
-        if (tags.isNotEmpty) 'tags': tags,
-      };
+    'id': id.value,
+    'kind': kind.name,
+    'algorithm': algorithm,
+    'createdAt': createdAt.toIso8601String(),
+    if (purpose != null) 'purpose': purpose,
+    'version': version,
+    if (rotatedFrom != null) 'rotatedFrom': rotatedFrom!.value,
+    if (threshold != null) 'threshold': threshold!.toJson(),
+    if (tags.isNotEmpty) 'tags': tags,
+  };
 }

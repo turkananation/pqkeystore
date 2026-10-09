@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+* **Documented every public type.** All 20 previously-undocumented top-level
+  declarations now carry dartdoc: the `PqKeystoreError` hierarchy and `KsResult`,
+  `KeyId`, `KeyKind`, `UnlockMethod` and its three subclasses, `ThresholdMeta`,
+  `KeyMetadata`, `SealedRecord`, `BackendType` and `createBackend`.
+  API-document coverage measured against the whole `lib/` tree goes from 16.3%
+  to 30.3% (pub.dev scores the `>= 20%` band).
+  The docs state the things a caller can otherwise get wrong: that metadata is
+  stored in cleartext and must not hold secrets; that a record's metadata cannot
+  be edited in place without rewriting the record; that `PlatformUnlock` and
+  `PassphraseThenPlatform` are refused in format version 1; that `NotFound` is
+  deliberately indistinguishable from "deleted".
+* **`dart format` applied to `lib/` and `test/`.** Eight files were not
+  formatter-clean on `main`, which costs pub points.
+
 * **Breaking:** Platform channel contract v1 (`doc/PLATFORM_CONTRACT.md`):
   - Removed `putJson`/`getJson` and the `__meta__` metadata sidecar. `list()` filters on decoded PQKS metadata, and `__meta__`-prefixed IDs are now ordinary IDs (BUG-010).
   - Arguments are `id`/`data`/`options`; `delete` returns a bool; `listIds` is implemented on every platform (BUG-002/003/004).

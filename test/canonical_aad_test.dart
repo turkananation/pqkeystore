@@ -9,13 +9,13 @@ import 'package:pqkeystore/pqkeystore.dart';
 void main() {
   group('canonicalAad', () {
     KeyMetadata testMeta({String id = 'aad-test-key'}) => KeyMetadata(
-          id: KeyId(id),
-          kind: KeyKind.mlKemSecret,
-          algorithm: 'ML-KEM-768',
-          createdAt: DateTime.utc(2025, 1, 1, 12, 0, 0),
-          purpose: 'testing',
-          tags: {'env': 'test', 'tier': 'alpha'},
-        );
+      id: KeyId(id),
+      kind: KeyKind.mlKemSecret,
+      algorithm: 'ML-KEM-768',
+      createdAt: DateTime.utc(2025, 1, 1, 12, 0, 0),
+      purpose: 'testing',
+      tags: {'env': 'test', 'tier': 'alpha'},
+    );
 
     test('produces identical output for identical metadata', () {
       final meta = testMeta();
@@ -25,12 +25,15 @@ void main() {
       expect(aad1, equals(aad2));
     });
 
-    test('produces identical output across separate instances with same data', () {
-      final meta1 = testMeta();
-      final meta2 = testMeta();
+    test(
+      'produces identical output across separate instances with same data',
+      () {
+        final meta1 = testMeta();
+        final meta2 = testMeta();
 
-      expect(canonicalAad(meta1), equals(canonicalAad(meta2)));
-    });
+        expect(canonicalAad(meta1), equals(canonicalAad(meta2)));
+      },
+    );
 
     test('produces different output for different metadata', () {
       final meta1 = testMeta(id: 'key-alpha');

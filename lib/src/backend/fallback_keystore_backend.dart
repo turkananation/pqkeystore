@@ -71,13 +71,13 @@ final class FallbackKeystoreBackend implements PqKeystoreBackend {
   static const String _tombstoneDirName = '.tombstones';
 
   Directory get _tombstoneDir => Directory(
-        '${fallback.directory.path}${Platform.pathSeparator}$_tombstoneDirName',
-      );
+    '${fallback.directory.path}${Platform.pathSeparator}$_tombstoneDirName',
+  );
 
   File _tombstoneFor(KeyId id) => File(
-        '${_tombstoneDir.path}${Platform.pathSeparator}'
-        '${sha256.convert(utf8.encode(id.value))}.deleted',
-      );
+    '${_tombstoneDir.path}${Platform.pathSeparator}'
+    '${sha256.convert(utf8.encode(id.value))}.deleted',
+  );
 
   /// Runs [op] on the secure store. Returns `(value, true)` on success and
   /// `(null, false)` if the secure store is unavailable. Other errors throw.
@@ -217,8 +217,7 @@ final class FallbackKeystoreBackend implements PqKeystoreBackend {
   }
 
   @override
-  Future<bool> contains(KeyId id) async =>
-      await locate(id) != null;
+  Future<bool> contains(KeyId id) async => await locate(id) != null;
 
   /// Where [id] currently lives, or `null` if it does not exist.
   Future<StorageLocation?> locate(KeyId id) async {

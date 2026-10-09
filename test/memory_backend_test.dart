@@ -291,20 +291,19 @@ void main() {
       int participantIndex = 1,
       String ceremonyId = 'ceremony-003',
       String id = 'share-under-test',
-    }) =>
-        KeyMetadata(
-          id: KeyId(id),
-          kind: KeyKind.thresholdShare,
-          algorithm: 'FROST-Ed25519',
-          createdAt: DateTime.utc(2025, 1, 1),
-          threshold: ThresholdMeta(
-            schemeId: 'frost-v1',
-            t: t,
-            n: n,
-            participantIndex: participantIndex,
-            ceremonyId: ceremonyId,
-          ),
-        );
+    }) => KeyMetadata(
+      id: KeyId(id),
+      kind: KeyKind.thresholdShare,
+      algorithm: 'FROST-Ed25519',
+      createdAt: DateTime.utc(2025, 1, 1),
+      threshold: ThresholdMeta(
+        schemeId: 'frost-v1',
+        t: t,
+        n: n,
+        participantIndex: participantIndex,
+        ceremonyId: ceremonyId,
+      ),
+    );
 
     test('accepts 1-based participantIndex at both ends of 1..n', () async {
       final unlock = PassphraseUnlock(passphrase());
@@ -315,33 +314,38 @@ void main() {
           keyMaterial(),
           unlock,
         );
-        expect(result, isA<KsSuccess<void>>(),
-            reason: 'participantIndex $index must be accepted for n=3');
+        expect(
+          result,
+          isA<KsSuccess<void>>(),
+          reason: 'participantIndex $index must be accepted for n=3',
+        );
       }
     });
 
-    test('rejects participantIndex 0 — pqthreshold.Share.index is 1-based',
-        () async {
-      final unlock = PassphraseUnlock(passphrase());
+    test(
+      'rejects participantIndex 0 — pqthreshold.Share.index is 1-based',
+      () async {
+        final unlock = PassphraseUnlock(passphrase());
 
-      final result = await keystore.putShare(
-        shareMeta(participantIndex: 0),
-        keyMaterial(),
-        unlock,
-      );
+        final result = await keystore.putShare(
+          shareMeta(participantIndex: 0),
+          keyMaterial(),
+          unlock,
+        );
 
-      expect(result, isA<KsFailure<void>>());
-      result.when(
-        success: (_) => fail('Expected PolicyError'),
-        failure: (error) {
-          expect(error, isA<PolicyError>());
-          final message = (error as PolicyError).message;
-          expect(message, contains('participantIndex 0'));
-          expect(message, contains('1..3'));
-          expect(message, contains('1-based'));
-        },
-      );
-    });
+        expect(result, isA<KsFailure<void>>());
+        result.when(
+          success: (_) => fail('Expected PolicyError'),
+          failure: (error) {
+            expect(error, isA<PolicyError>());
+            final message = (error as PolicyError).message;
+            expect(message, contains('participantIndex 0'));
+            expect(message, contains('1..3'));
+            expect(message, contains('1-based'));
+          },
+        );
+      },
+    );
 
     test('rejects participantIndex above n', () async {
       final unlock = PassphraseUnlock(passphrase());
@@ -355,8 +359,10 @@ void main() {
       expect(result, isA<KsFailure<void>>());
       result.when(
         success: (_) => fail('Expected PolicyError'),
-        failure: (error) =>
-            expect((error as PolicyError).message, contains('out of range 1..3')),
+        failure: (error) => expect(
+          (error as PolicyError).message,
+          contains('out of range 1..3'),
+        ),
       );
     });
 
@@ -428,10 +434,15 @@ void main() {
       );
 
       expect(result, isA<KsFailure<void>>());
-      expect(writes, 0,
-          reason: 'validation must happen before the backend is touched');
-      expect(await counting.getSealed(const KeyId('share-never-written')),
-          isNull);
+      expect(
+        writes,
+        0,
+        reason: 'validation must happen before the backend is touched',
+      );
+      expect(
+        await counting.getSealed(const KeyId('share-never-written')),
+        isNull,
+      );
     });
 
     test('validate() returns null for a consistent record', () {

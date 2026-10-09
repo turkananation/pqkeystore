@@ -12,17 +12,17 @@ import 'package:pqkeystore/pqkeystore.dart';
 import 'contract/reference_native_store.dart';
 
 SealedRecord record(String id, {List<int> body = const [1]}) => SealedRecord(
-      metadata: KeyMetadata(
-        id: KeyId(id),
-        kind: KeyKind.mlKemSecret,
-        algorithm: 'test',
-        createdAt: DateTime.utc(2026),
-        purpose: 'p',
-      ),
-      wrapAlg: StubKeystoreCrypto.wrapAlgId,
-      ciphertext: Uint8List.fromList(body),
-      aad: Uint8List.fromList([4]),
-    );
+  metadata: KeyMetadata(
+    id: KeyId(id),
+    kind: KeyKind.mlKemSecret,
+    algorithm: 'test',
+    createdAt: DateTime.utc(2026),
+    purpose: 'p',
+  ),
+  wrapAlg: StubKeystoreCrypto.wrapAlgId,
+  ciphertext: Uint8List.fromList(body),
+  aad: Uint8List.fromList([4]),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -81,16 +81,18 @@ void main() {
     expect(fallbacks, isEmpty);
   });
 
-  test('UNAVAILABLE: writes go to the fallback and are reported once',
-      () async {
-    fault = PlatformErrorCode.unavailable;
-    await backend.putSealed(const KeyId('a'), record('a'));
-    await backend.putSealed(const KeyId('b'), record('b'));
-    expect(await files.contains(const KeyId('a')), isTrue);
-    expect(await backend.locate(const KeyId('a')), StorageLocation.fallback);
-    expect(fallbacks, hasLength(1));
-    expect(fallbacks.single.code, PlatformErrorCode.unavailable);
-  });
+  test(
+    'UNAVAILABLE: writes go to the fallback and are reported once',
+    () async {
+      fault = PlatformErrorCode.unavailable;
+      await backend.putSealed(const KeyId('a'), record('a'));
+      await backend.putSealed(const KeyId('b'), record('b'));
+      expect(await files.contains(const KeyId('a')), isTrue);
+      expect(await backend.locate(const KeyId('a')), StorageLocation.fallback);
+      expect(fallbacks, hasLength(1));
+      expect(fallbacks.single.code, PlatformErrorCode.unavailable);
+    },
+  );
 
   test('other errors are surfaced, never bypassed', () async {
     for (final code in [
@@ -113,35 +115,39 @@ void main() {
     expect(await files.contains(const KeyId('a')), isFalse);
   });
 
-  test('options the file store cannot enforce are rejected, not dropped',
-      () async {
-    final strict = build(
-      options: const PlatformStoreOptions(
-        accessibility: PlatformAccessibility.whenUnlocked,
-      ),
-    );
-    fault = PlatformErrorCode.unavailable;
-    await expectLater(
-      strict.putSealed(const KeyId('a'), record('a')),
-      throwsA(
-        isA<PlatformError>().having(
-          (e) => e.code,
-          'code',
-          PlatformErrorCode.unsupportedOption,
+  test(
+    'options the file store cannot enforce are rejected, not dropped',
+    () async {
+      final strict = build(
+        options: const PlatformStoreOptions(
+          accessibility: PlatformAccessibility.whenUnlocked,
         ),
-      ),
-    );
-    expect(await files.contains(const KeyId('a')), isFalse);
-  });
+      );
+      fault = PlatformErrorCode.unavailable;
+      await expectLater(
+        strict.putSealed(const KeyId('a'), record('a')),
+        throwsA(
+          isA<PlatformError>().having(
+            (e) => e.code,
+            'code',
+            PlatformErrorCode.unsupportedOption,
+          ),
+        ),
+      );
+      expect(await files.contains(const KeyId('a')), isFalse);
+    },
+  );
 
-  test('records written during an outage stay visible after recovery',
-      () async {
-    fault = PlatformErrorCode.unavailable;
-    await backend.putSealed(const KeyId('a'), record('a', body: [7]));
-    fault = null;
-    expect((await backend.getSealed(const KeyId('a')))!.ciphertext, [7]);
-    expect((await backend.list()).map((r) => r.metadata.id.value), ['a']);
-  });
+  test(
+    'records written during an outage stay visible after recovery',
+    () async {
+      fault = PlatformErrorCode.unavailable;
+      await backend.putSealed(const KeyId('a'), record('a', body: [7]));
+      fault = null;
+      expect((await backend.getSealed(const KeyId('a')))!.ciphertext, [7]);
+      expect((await backend.list()).map((r) => r.metadata.id.value), ['a']);
+    },
+  );
 
   test('I1: a newer outage copy wins over the stale secure copy', () async {
     await backend.putSealed(const KeyId('a'), record('a', body: [1]));
@@ -163,21 +169,23 @@ void main() {
     expect((await backend.getSealed(const KeyId('a')))!.ciphertext, [3]);
   });
 
-  test('I2: deleting during an outage cannot resurrect the secure copy',
-      () async {
-    await backend.putSealed(const KeyId('a'), record('a'));
-    fault = PlatformErrorCode.unavailable;
-    expect(await backend.delete(const KeyId('a')), isTrue);
-    fault = null;
-    expect(await backend.getSealed(const KeyId('a')), isNull);
-    expect(await backend.contains(const KeyId('a')), isFalse);
-    expect(await backend.list(), isEmpty);
-    // list() applied the tombstone to secure storage.
-    expect(await nativeBytes('a'), isNull);
-    // Writing again clears the deletion.
-    await backend.putSealed(const KeyId('a'), record('a', body: [5]));
-    expect((await backend.getSealed(const KeyId('a')))!.ciphertext, [5]);
-  });
+  test(
+    'I2: deleting during an outage cannot resurrect the secure copy',
+    () async {
+      await backend.putSealed(const KeyId('a'), record('a'));
+      fault = PlatformErrorCode.unavailable;
+      expect(await backend.delete(const KeyId('a')), isTrue);
+      fault = null;
+      expect(await backend.getSealed(const KeyId('a')), isNull);
+      expect(await backend.contains(const KeyId('a')), isFalse);
+      expect(await backend.list(), isEmpty);
+      // list() applied the tombstone to secure storage.
+      expect(await nativeBytes('a'), isNull);
+      // Writing again clears the deletion.
+      await backend.putSealed(const KeyId('a'), record('a', body: [5]));
+      expect((await backend.getSealed(const KeyId('a')))!.ciphertext, [5]);
+    },
+  );
 
   test('list merges both stores and applies filters', () async {
     await backend.putSealed(const KeyId('s'), record('s'));
@@ -185,10 +193,10 @@ void main() {
     await backend.putSealed(const KeyId('f'), record('f'));
     expect((await backend.list()).map((r) => r.metadata.id.value), ['f']);
     fault = null;
-    expect(
-      (await backend.list(purpose: 'p')).map((r) => r.metadata.id.value),
-      ['f', 's'],
-    );
+    expect((await backend.list(purpose: 'p')).map((r) => r.metadata.id.value), [
+      'f',
+      's',
+    ]);
     expect(await backend.list(purpose: 'other'), isEmpty);
   });
 

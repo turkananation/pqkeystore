@@ -124,23 +124,27 @@ void main() {
       expect(spy.unwrapCalls, 1);
     });
 
-    test('metadata changed while the stored AAD is preserved is rejected', () async {
-      await seed('invariant-tamper');
-      await retagPreservingAad(
-        const KeyId('invariant-tamper'),
-        _meta(id: 'invariant-tamper', purpose: 'attacker'),
-      );
+    test(
+      'metadata changed while the stored AAD is preserved is rejected',
+      () async {
+        await seed('invariant-tamper');
+        await retagPreservingAad(
+          const KeyId('invariant-tamper'),
+          _meta(id: 'invariant-tamper', purpose: 'attacker'),
+        );
 
-      final result = await useInt(const KeyId('invariant-tamper'));
+        final result = await useInt(const KeyId('invariant-tamper'));
 
-      expect(result, isA<KsFailure<int>>());
-      expect((result as KsFailure<int>).error, isA<FormatError>());
-      expect(
-        spy.unwrapCalls,
-        0,
-        reason: 'unwrap must not be invoked for a record that fails validation',
-      );
-    });
+        expect(result, isA<KsFailure<int>>());
+        expect((result as KsFailure<int>).error, isA<FormatError>());
+        expect(
+          spy.unwrapCalls,
+          0,
+          reason:
+              'unwrap must not be invoked for a record that fails validation',
+        );
+      },
+    );
 
     test('every authenticated metadata field is covered', () async {
       await seed('invariant-fields');
@@ -177,20 +181,22 @@ void main() {
       }
     });
 
-    test('a record whose embedded ID differs from the requested ID is rejected',
-        () async {
-      await seed('invariant-identity');
-      await retagPreservingAad(
-        const KeyId('invariant-identity'),
-        _meta(id: 'invariant-someone-else'),
-      );
+    test(
+      'a record whose embedded ID differs from the requested ID is rejected',
+      () async {
+        await seed('invariant-identity');
+        await retagPreservingAad(
+          const KeyId('invariant-identity'),
+          _meta(id: 'invariant-someone-else'),
+        );
 
-      final result = await useInt(const KeyId('invariant-identity'));
+        final result = await useInt(const KeyId('invariant-identity'));
 
-      expect(result, isA<KsFailure<int>>());
-      expect((result as KsFailure<int>).error, isA<FormatError>());
-      expect(spy.unwrapCalls, 0);
-    });
+        expect(result, isA<KsFailure<int>>());
+        expect((result as KsFailure<int>).error, isA<FormatError>());
+        expect(spy.unwrapCalls, 0);
+      },
+    );
 
     test('a missing record is still NotFound, not a format error', () async {
       final result = await useInt(const KeyId('invariant-absent'));

@@ -23,10 +23,34 @@ void main() {
 
     test('round-trip encode/decode preserves all fields', () {
       final metadata = testMetadata();
-      final ciphertext = Uint8List.fromList([0xDE, 0xAD, 0xBE, 0xEF, 0x01, 0x02, 0x03]);
+      final ciphertext = Uint8List.fromList([
+        0xDE,
+        0xAD,
+        0xBE,
+        0xEF,
+        0x01,
+        0x02,
+        0x03,
+      ]);
       final aad = Uint8List.fromList([0xAA, 0xDD]);
-      final nonce = Uint8List.fromList([0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB]);
-      final kdfParams = <String, dynamic>{'iterations': 100000, 'memory': 65536};
+      final nonce = Uint8List.fromList([
+        0x00,
+        0x11,
+        0x22,
+        0x33,
+        0x44,
+        0x55,
+        0x66,
+        0x77,
+        0x88,
+        0x99,
+        0xAA,
+        0xBB,
+      ]);
+      final kdfParams = <String, dynamic>{
+        'iterations': 100000,
+        'memory': 65536,
+      };
 
       final record = SealedRecord(
         metadata: metadata,

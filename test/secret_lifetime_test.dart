@@ -187,32 +187,35 @@ void main() {
       );
     });
 
-    test('a record that fails validation never produces an unwrap buffer', () async {
-      await seed('wipe-not-created');
-      crypto.lastUnwrapOutput = null;
+    test(
+      'a record that fails validation never produces an unwrap buffer',
+      () async {
+        await seed('wipe-not-created');
+        crypto.lastUnwrapOutput = null;
 
-      final stored = await backend.getSealed(const KeyId('wipe-not-created'));
-      await backend.putSealed(
-        const KeyId('wipe-not-created'),
-        SealedRecord(
-          metadata: _meta('wipe-not-created'),
-          wrapAlg: stored!.wrapAlg,
-          ciphertext: stored.ciphertext,
-          aad: Uint8List.fromList([...stored.aad, 0x00]),
-          nonce: stored.nonce,
-          kdfParams: stored.kdfParams,
-        ),
-      );
+        final stored = await backend.getSealed(const KeyId('wipe-not-created'));
+        await backend.putSealed(
+          const KeyId('wipe-not-created'),
+          SealedRecord(
+            metadata: _meta('wipe-not-created'),
+            wrapAlg: stored!.wrapAlg,
+            ciphertext: stored.ciphertext,
+            aad: Uint8List.fromList([...stored.aad, 0x00]),
+            nonce: stored.nonce,
+            kdfParams: stored.kdfParams,
+          ),
+        );
 
-      final result = await keystore.use(
-        const KeyId('wipe-not-created'),
-        PassphraseUnlock(_passphrase()),
-        (p) async => p.length,
-      );
+        final result = await keystore.use(
+          const KeyId('wipe-not-created'),
+          PassphraseUnlock(_passphrase()),
+          (p) async => p.length,
+        );
 
-      expect(result, isA<KsFailure<int>>());
-      expect(crypto.lastUnwrapOutput, isNull);
-    });
+        expect(result, isA<KsFailure<int>>());
+        expect(crypto.lastUnwrapOutput, isNull);
+      },
+    );
   });
 
   group('_tracked helper sanity', () {

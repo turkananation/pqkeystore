@@ -80,73 +80,73 @@ final class FileKeystoreBackend implements PqKeystoreBackend {
 
   @override
   Future<void> putSealed(KeyId id, SealedRecord record) => _locked(() async {
-        validatePlatformKeyId(id);
-        if (record.metadata.id != id) {
-          throw const PlatformError(
-            'record metadata ID does not match the storage ID',
-            code: PlatformErrorCode.invalidArgs,
-          );
-        }
-        final encoded = record.encode();
-        if (encoded.length > PlatformContract.maxRecordBytes) {
-          throw const PlatformError(
-            'encoded record exceeds ${PlatformContract.maxRecordBytes} bytes',
-            code: PlatformErrorCode.invalidArgs,
-          );
-        }
-        await _prepare();
-        final target = _fileFor(id);
-        final temp = File(
-          '${target.path}$_tempMarker$pid-${++_tempCounter}-'
-          '${_random.nextInt(1 << 32).toRadixString(16)}',
-        );
-        try {
-          // Create empty, restrict, then write: content is never exposed
-          // under default permissions.
-          await temp.create(exclusive: true);
-          _restrict(temp.path, '600');
-          await temp.writeAsBytes(encoded, flush: true);
-          await temp.rename(target.path);
-        } on FileSystemException catch (e) {
-          await _deleteQuietly(temp);
-          throw PlatformError(
-            'cannot write record (${e.osError?.errorCode ?? 'io'})',
-            code: PlatformErrorCode.storageError,
-          );
-        }
-      });
+    validatePlatformKeyId(id);
+    if (record.metadata.id != id) {
+      throw const PlatformError(
+        'record metadata ID does not match the storage ID',
+        code: PlatformErrorCode.invalidArgs,
+      );
+    }
+    final encoded = record.encode();
+    if (encoded.length > PlatformContract.maxRecordBytes) {
+      throw const PlatformError(
+        'encoded record exceeds ${PlatformContract.maxRecordBytes} bytes',
+        code: PlatformErrorCode.invalidArgs,
+      );
+    }
+    await _prepare();
+    final target = _fileFor(id);
+    final temp = File(
+      '${target.path}$_tempMarker$pid-${++_tempCounter}-'
+      '${_random.nextInt(1 << 32).toRadixString(16)}',
+    );
+    try {
+      // Create empty, restrict, then write: content is never exposed
+      // under default permissions.
+      await temp.create(exclusive: true);
+      _restrict(temp.path, '600');
+      await temp.writeAsBytes(encoded, flush: true);
+      await temp.rename(target.path);
+    } on FileSystemException catch (e) {
+      await _deleteQuietly(temp);
+      throw PlatformError(
+        'cannot write record (${e.osError?.errorCode ?? 'io'})',
+        code: PlatformErrorCode.storageError,
+      );
+    }
+  });
 
   @override
   Future<SealedRecord?> getSealed(KeyId id) => _locked(() async {
-        validatePlatformKeyId(id);
-        return _read(_fileFor(id), expected: id);
-      });
+    validatePlatformKeyId(id);
+    return _read(_fileFor(id), expected: id);
+  });
 
   @override
   Future<bool> delete(KeyId id) => _locked(() async {
-        validatePlatformKeyId(id);
-        final file = _fileFor(id);
-        final valid = await _read(file, expected: id) != null;
-        try {
-          await file.delete();
-        } on PathNotFoundException {
-          return false;
-        } on FileSystemException catch (e) {
-          throw PlatformError(
-            'cannot delete record (${e.osError?.errorCode ?? 'io'})',
-            code: PlatformErrorCode.storageError,
-          );
-        }
-        // A file that was not a valid record for this ID is removed but was
-        // not an entry.
-        return valid;
-      });
+    validatePlatformKeyId(id);
+    final file = _fileFor(id);
+    final valid = await _read(file, expected: id) != null;
+    try {
+      await file.delete();
+    } on PathNotFoundException {
+      return false;
+    } on FileSystemException catch (e) {
+      throw PlatformError(
+        'cannot delete record (${e.osError?.errorCode ?? 'io'})',
+        code: PlatformErrorCode.storageError,
+      );
+    }
+    // A file that was not a valid record for this ID is removed but was
+    // not an entry.
+    return valid;
+  });
 
   @override
   Future<bool> contains(KeyId id) => _locked(() async {
-        validatePlatformKeyId(id);
-        return await _read(_fileFor(id), expected: id) != null;
-      });
+    validatePlatformKeyId(id);
+    return await _read(_fileFor(id), expected: id) != null;
+  });
 
   @override
   Future<List<SealedRecord>> list({KeyKind? kind, String? purpose}) =>
@@ -174,7 +174,9 @@ final class FileKeystoreBackend implements PqKeystoreBackend {
           }
           records.add(record);
         }
-        records.sort((a, b) => a.metadata.id.value.compareTo(b.metadata.id.value));
+        records.sort(
+          (a, b) => a.metadata.id.value.compareTo(b.metadata.id.value),
+        );
         return records;
       });
 
@@ -219,8 +221,10 @@ final class FileKeystoreBackend implements PqKeystoreBackend {
       await directory.create(recursive: true);
       _restrict(directory.path, '700');
     }
-    final marker = File('${directory.path}${Platform.pathSeparator}'
-        '$layoutMarkerName');
+    final marker = File(
+      '${directory.path}${Platform.pathSeparator}'
+      '$layoutMarkerName',
+    );
     if (marker.existsSync()) {
       final content = await marker.readAsString();
       if (content != _layoutMarker) {

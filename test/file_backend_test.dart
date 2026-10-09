@@ -55,29 +55,41 @@ void main() {
     expect(await backend.contains(id), isFalse);
   });
 
-  test('files are named by SHA-256 and contain the PQKS record exactly',
-      () async {
-    await backend.putSealed(const KeyId('k'), record('k'));
-    final name = FileKeystoreBackend.fileNameFor(const KeyId('k'));
-    expect(name, matches(RegExp(r'^[0-9a-f]{64}\.pqks$')));
-    final bytes = File(path(name)).readAsBytesSync();
-    expect(ascii.decode(bytes.sublist(0, 4)), 'PQKS');
-    expect(bytes, record('k').encode());
-  });
+  test(
+    'files are named by SHA-256 and contain the PQKS record exactly',
+    () async {
+      await backend.putSealed(const KeyId('k'), record('k'));
+      final name = FileKeystoreBackend.fileNameFor(const KeyId('k'));
+      expect(name, matches(RegExp(r'^[0-9a-f]{64}\.pqks$')));
+      final bytes = File(path(name)).readAsBytesSync();
+      expect(ascii.decode(bytes.sublist(0, 4)), 'PQKS');
+      expect(bytes, record('k').encode());
+    },
+  );
 
-  test('BUG-006: IDs that sanitized to the same name no longer alias',
-      () async {
-    const ids = ['a/b', 'ab', 'a.b', 'Key', 'key', '../ab', 'caf\u00e9',
-        'cafe\u0301'];
-    for (var i = 0; i < ids.length; i++) {
-      await backend.putSealed(KeyId(ids[i]), record(ids[i], body: [i]));
-    }
-    for (var i = 0; i < ids.length; i++) {
-      expect((await backend.getSealed(KeyId(ids[i])))!.ciphertext, [i]);
-    }
-    final listed = (await backend.list()).map((r) => r.metadata.id.value);
-    expect(listed.toSet(), ids.toSet());
-  });
+  test(
+    'BUG-006: IDs that sanitized to the same name no longer alias',
+    () async {
+      const ids = [
+        'a/b',
+        'ab',
+        'a.b',
+        'Key',
+        'key',
+        '../ab',
+        'caf\u00e9',
+        'cafe\u0301',
+      ];
+      for (var i = 0; i < ids.length; i++) {
+        await backend.putSealed(KeyId(ids[i]), record(ids[i], body: [i]));
+      }
+      for (var i = 0; i < ids.length; i++) {
+        expect((await backend.getSealed(KeyId(ids[i])))!.ciphertext, [i]);
+      }
+      final listed = (await backend.list()).map((r) => r.metadata.id.value);
+      expect(listed.toSet(), ids.toSet());
+    },
+  );
 
   test('BUG-007: a failed replacement keeps the previous record', () async {
     await backend.putSealed(const KeyId('k'), record('k', body: [1]));
@@ -97,13 +109,15 @@ void main() {
     final outside = File('${root.path}${Platform.pathSeparator}outside.pqks')
       ..writeAsBytesSync(record('secret-elsewhere').encode());
     await backend.putSealed(const KeyId('k'), record('k'));
-    File(path('.pqks-index.json')).writeAsStringSync(jsonEncode({
-      'version': 1,
-      'entries': {
-        'secret-elsewhere': {'path': outside.path, 'checksum': '00000000'},
-      },
-      'seal': '00000000',
-    }));
+    File(path('.pqks-index.json')).writeAsStringSync(
+      jsonEncode({
+        'version': 1,
+        'entries': {
+          'secret-elsewhere': {'path': outside.path, 'checksum': '00000000'},
+        },
+        'seal': '00000000',
+      }),
+    );
     final ids = (await backend.list()).map((r) => r.metadata.id.value);
     expect(ids, ['k']);
     expect(await backend.contains(const KeyId('secret-elsewhere')), isFalse);
@@ -111,8 +125,9 @@ void main() {
 
   test('a record moved under another ID is not an entry', () async {
     await backend.putSealed(const KeyId('a'), record('a'));
-    File(path(FileKeystoreBackend.fileNameFor(const KeyId('a'))))
-        .copySync(path(FileKeystoreBackend.fileNameFor(const KeyId('b'))));
+    File(
+      path(FileKeystoreBackend.fileNameFor(const KeyId('a'))),
+    ).copySync(path(FileKeystoreBackend.fileNameFor(const KeyId('b'))));
     expect(await backend.getSealed(const KeyId('b')), isNull);
     expect(await backend.contains(const KeyId('b')), isFalse);
     expect((await backend.list()).map((r) => r.metadata.id.value), ['a']);
@@ -143,10 +158,12 @@ void main() {
   test('adopts the legacy sanitized-name layout', () async {
     final legacyDir = Directory('${root.path}${Platform.pathSeparator}legacy')
       ..createSync();
-    File('${legacyDir.path}${Platform.pathSeparator}legacykey.pqks')
-        .writeAsBytesSync(record('legacy-key').encode());
-    File('${legacyDir.path}${Platform.pathSeparator}.pqks-index.json')
-        .writeAsStringSync('{}');
+    File(
+      '${legacyDir.path}${Platform.pathSeparator}legacykey.pqks',
+    ).writeAsBytesSync(record('legacy-key').encode());
+    File(
+      '${legacyDir.path}${Platform.pathSeparator}.pqks-index.json',
+    ).writeAsStringSync('{}');
     final legacy = FileKeystoreBackend(legacyDir);
     await legacy.putSealed(const KeyId('new'), record('new'));
     expect(await legacy.contains(const KeyId('legacy-key')), isTrue);
@@ -158,8 +175,9 @@ void main() {
 
   test('refuses an unknown layout marker', () async {
     dir.createSync(recursive: true);
-    File(path(FileKeystoreBackend.layoutMarkerName))
-        .writeAsStringSync('something-else\n');
+    File(
+      path(FileKeystoreBackend.layoutMarkerName),
+    ).writeAsStringSync('something-else\n');
     await expectLater(
       FileKeystoreBackend(dir).putSealed(const KeyId('k'), record('k')),
       throwsA(isA<FormatError>()),
@@ -169,7 +187,9 @@ void main() {
   test('removes stale temp files', () async {
     dir.createSync(recursive: true);
     final stale = File(path('x.pqks.tmp-1-1-1'))..writeAsBytesSync([1]);
-    stale.setLastModifiedSync(DateTime.now().subtract(const Duration(hours: 1)));
+    stale.setLastModifiedSync(
+      DateTime.now().subtract(const Duration(hours: 1)),
+    );
     await backend.putSealed(const KeyId('k'), record('k'));
     expect(stale.existsSync(), isFalse);
   });
@@ -192,13 +212,20 @@ void main() {
         backend.putSealed(const KeyId('same'), record('same', body: [i])),
     ]);
     expect(await backend.list(), hasLength(21));
-    expect((await backend.getSealed(const KeyId('same')))!.ciphertext,
-        hasLength(1));
+    expect(
+      (await backend.getSealed(const KeyId('same')))!.ciphertext,
+      hasLength(1),
+    );
   });
 
   test('pqforge crypto round trip through the file store', () async {
-    final keystore = PqKeystore(backend: backend, crypto: PqForgeKeystoreCrypto());
-    final unlock = PassphraseUnlock(Uint8List.fromList(utf8.encode('test-only')));
+    final keystore = PqKeystore(
+      backend: backend,
+      crypto: PqForgeKeystoreCrypto(),
+    );
+    final unlock = PassphraseUnlock(
+      Uint8List.fromList(utf8.encode('test-only')),
+    );
     final material = Uint8List.fromList(List.generate(32, (i) => i));
     await keystore.put(
       KeyMetadata(

@@ -26,9 +26,7 @@ Uint8List canonicalAad(KeyMetadata metadata) {
 dynamic _sortDeep(dynamic value) {
   if (value is Map<String, dynamic>) {
     final sortedKeys = value.keys.toList()..sort();
-    return {
-      for (final k in sortedKeys) k: _sortDeep(value[k]),
-    };
+    return {for (final k in sortedKeys) k: _sortDeep(value[k])};
   }
   if (value is List) {
     return value.map(_sortDeep).toList();

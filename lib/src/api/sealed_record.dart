@@ -2,7 +2,32 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'key_metadata.dart';
 
+/// One stored record: its metadata plus the wrapped key material.
+///
+/// This is the only portable record format in the package (PQKS, format version
+/// 1). Every other backend either stores these bytes directly or wraps them in a
+/// platform-specific envelope — see [`../../doc/FORMATS.md`](../../doc/FORMATS.md)
+/// for every byte layout.
+///
+/// ## Identity binding
+///
+/// [metadata] is stored in cleartext inside the record, and [aad] is the
+/// canonical serialization of that metadata. Two invariants are enforced on read
+/// before the crypto adapter is ever called:
+///
+/// 1. the decoded metadata's id equals the id the record was looked up by, and
+/// 2. the stored [aad] equals the AAD recomputed from the decoded metadata.
+///
+/// A record whose metadata was altered while its AAD was left intact is rejected
+/// with a [FormatError], and unwrapping is never attempted. This closes the
+/// obvious attack — rewrite the metadata, keep the ciphertext — without claiming
+/// to defend against an attacker who can rewrite the record together with its
+/// AAD.
 final class SealedRecord {
+  /// Creates a sealed record.
+  ///
+  /// Callers normally do not construct these; use `PqKeystore.put` and let the
+  /// facade compute [aad] and the wrapped material.
   const SealedRecord({
     required this.metadata,
     required this.wrapAlg,

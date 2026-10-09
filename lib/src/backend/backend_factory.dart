@@ -7,9 +7,18 @@ import 'memory_keystore_backend.dart';
 import 'platform_keystore_backend.dart';
 import 'platform_options.dart';
 
+/// Which storage implementation a keystore uses.
 enum BackendType {
+  /// In-process storage. Test-only: nothing survives the process, and it is not
+  /// protected by anything.
   memory,
+
+  /// One file per record in an application-chosen directory. Portable, and the
+  /// protection is whatever the directory and the file modes provide.
   file,
+
+  /// The operating system's own facility — AndroidKeyStore, the Apple keychain,
+  /// DPAPI, or the Secret Service. Protection is the OS's, not this package's.
   platform,
 
   /// Secure platform storage with an opt-in file fallback in `path`, used
@@ -17,6 +26,14 @@ enum BackendType {
   platformWithFileFallback,
 }
 
+/// Creates the backend for [type].
+///
+/// [path] is required for [BackendType.file] and for the fallback variant.
+/// [platformOptions] applies only to the platform backends.
+///
+/// Throws [ArgumentError] when [path] is required and missing. It does not fall
+/// back to a weaker backend: silently substituting storage would mean the
+/// application believes it has hardware-backed custody when it does not.
 PqKeystoreBackend createBackend(
   BackendType type, {
   String? path,
