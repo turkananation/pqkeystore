@@ -225,6 +225,8 @@ final class PqKeystore {
   /// Enforces policy:
   /// - [metadata.kind] must be [KeyKind.thresholdShare]
   /// - [metadata.threshold] must be non-null
+  /// - that metadata must be internally consistent: `1 <= t <= n`,
+  ///   `participantIndex` in `1..n`, non-empty `ceremonyId`.
   ///
   /// Threshold shares are stored individually. Full reconstruction
   /// requires explicit high-friction ceremony via `pqthreshold`.
@@ -238,10 +240,15 @@ final class PqKeystore {
         PolicyError('putShare requires kind == KeyKind.thresholdShare'),
       );
     }
-    if (metadata.threshold == null) {
+    final threshold = metadata.threshold;
+    if (threshold == null) {
       return const KsFailure(
         PolicyError('putShare requires ThresholdMeta to be set'),
       );
+    }
+    final problem = threshold.validate();
+    if (problem != null) {
+      return KsFailure(PolicyError('putShare: $problem'));
     }
     return put(metadata, shareData, unlock);
   }
