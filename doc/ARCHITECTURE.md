@@ -33,7 +33,7 @@ This is the orchestrator. `put` asks `PqKeystoreCrypto` to wrap plaintext and th
 
 ### 3. PqKeystoreCrypto (Wrap/Unwrap)
 
-Responsible for wrapping and unwrapping key material. `PqForgeKeystoreCrypto` calls pqforge 0.4.6 `wrapKeyWithPassphrase` and maps `PqWrappedKey` fields into `SealedRecord`; it does not serialize a `.pqf` or `.pqfs` content envelope. `SealedRecord` encodes wrapper parameters and ciphertext in PQKS framing. Parsing alone does not authenticate a record, and retrieval currently lacks a metadata-to-AAD consistency check.
+Responsible for wrapping and unwrapping key material. `PqForgeKeystoreCrypto` calls pqforge 0.4.13 `wrapKeyWithPassphrase` and maps `PqWrappedKey` fields into `SealedRecord`; it does not serialize a `.pqf` or `.pqfs` content envelope. `SealedRecord` encodes wrapper parameters and ciphertext in PQKS framing. Parsing alone does not authenticate a record, and retrieval currently lacks a metadata-to-AAD consistency check.
 
 ### 4. PqKeystoreBackend (Storage)
 

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+* `pqforge` floor `^0.4.7` → `^0.4.13`. The passphrase wrap path is unchanged (`String` passphrase, Argon2id, AES-256-GCM, `PqWrappedKey` field mapping). The newer surface (HPKE, X.509, Ed448, Brainpool, FFDHE, ChaCha20 keystream, SHA-1) is not called by this package.
 * **Breaking:** v1 accepts only `PassphraseUnlock`. `PlatformUnlock` and `PassphraseThenPlatform` return `PolicyError` and are not unwrapped. `PassphraseThenPlatform` is not treated as passphrase-only.
 * **Breaking:** `StubKeystoreCrypto` is no longer exported. The XOR fixture lives at `test/support/stub_keystore_crypto.dart` and is not part of the package API.
 * Argon2id costs in a stored record are checked before unwrap (`iterations` 1..10, `memoryPowerOf2` 10..20, `lanes` 1..16, salt ≥ 16). A violation is `FormatError`. Evidence and the passphrase-encoding contract: `doc/PROVIDER_LIFECYCLE.md`.

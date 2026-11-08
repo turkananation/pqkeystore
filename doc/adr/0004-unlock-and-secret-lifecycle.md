@@ -20,7 +20,7 @@ Still not solved, and still not claimed: GC-moved copies of a buffer, the immuta
 TRK-005 closed the part of this ADR that is evidence rather than a platform-authentication design:
 
 - v1 accepts only `PassphraseUnlock`. `PlatformUnlock` and `PassphraseThenPlatform` are `PolicyError` at the facade and are not unwrapped. `PassphraseThenPlatform` is not treated as passphrase-only. That rejects the alternative below; it does not implement a second factor.
-- Passphrase encoding and the buffer table are recorded in [`../PROVIDER_LIFECYCLE.md`](../PROVIDER_LIFECYCLE.md), against pqforge 0.4.7–0.4.13 and zeroize 0.2.0.
+- Passphrase encoding and the buffer table are recorded in [`../PROVIDER_LIFECYCLE.md`](../PROVIDER_LIFECYCLE.md), against pqforge 0.4.13 and zeroize 0.2.0. The wrap API is the same one reviewed at 0.4.7.
 - Stored Argon2id costs are `FormatError` before the KDF. The window is iterations 1..10, `memoryPowerOf2` 10..20, lanes 1..16, salt at least 16 bytes.
 
 Still open, and still why this ADR stays Proposed: whether platform authentication is an outer storage policy, an inner factor, or both, and what a real `PassphraseThenPlatform` chain looks like on each OS. Complete process-memory erasure stays a non-claim.

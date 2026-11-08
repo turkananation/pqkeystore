@@ -6,7 +6,7 @@ Reviewed against source, not against a guess:
 
 | Package | Constraint | Source reviewed |
 | --- | --- | --- |
-| `pqforge` | `^0.4.7` (resolves through 0.4.13) | tag `v0.4.7` (`7e59082b`) and tag `v0.4.13` (`b1d6e6a4`). `PqExportedKey` copies on construction (`lib/src/keys/pq_keys.dart`, `_copy`). `wrapKeyWithPassphrase` / `unwrapKeyWithPassphrase` are synchronous (`lib/src/services/pqforge_service.dart`). Argon2id bounds are `Argon2Limits` in `lib/src/primitives/pq_primitives.dart`: iterations 1..10, `memoryPowerOf2` 10..20, lanes 1..16, salt ≥ 8. `argon2id` does `utf8.encode(password)`. |
+| `pqforge` | `^0.4.13` | tag `v0.4.13` (`b1d6e6a4`), compared with tag `v0.4.7` (`7e59082b`). `PqExportedKey` still copies on construction (`lib/src/keys/pq_keys.dart`, `_copy`). `wrapKeyWithPassphrase` / `unwrapKeyWithPassphrase` are still synchronous and still take a `String` passphrase (`lib/src/services/pqforge_service.dart`). Argon2id bounds are unchanged: iterations 1..10, `memoryPowerOf2` 10..20, lanes 1..16, salt ≥ 8. `argon2id` still does `utf8.encode(password)`. |
 | `zeroize` | `^0.2.0` | tag `v0.2.0` (`d9540db2`). `SecretBytes.fromUint8List` always copies and never takes ownership (`lib/src/containers/secret_bytes.dart`). `dispose` wipes that copy. `secureZero` is the wipe that survives DSE. |
 
 The two tags agree on the copy and the Argon2 window. This package's salt floor is **16**, stricter than pqforge's 8, because that is the salt `PqForgeKeystoreCrypto` writes.
