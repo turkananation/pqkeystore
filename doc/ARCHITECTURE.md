@@ -29,11 +29,11 @@ The application interacts exclusively with the `PqKeystore` facade. It provides 
 
 ### 2. PqKeystore Facade
 
-This is the orchestrator. `put` asks `PqKeystoreCrypto` to wrap plaintext and then asks `PqKeystoreBackend` to store a `SealedRecord`. `use` retrieves and unwraps the record, calls the supplied body, clears the callback copy in a `finally` block, and disposes the `SecretBytes` wrapper. The resolved `SecretBytes.fromUint8List` copies its input, so the original unwrap buffer remains caller-owned and is not currently cleared by the facade. The public named constructor is verified by the passing facade tests.
+This is the orchestrator. `put` asks `PqKeystoreCrypto` to wrap plaintext and then asks `PqKeystoreBackend` to store a `SealedRecord`. `use` retrieves the record, checks its identity and canonical AAD, unwraps, and passes plaintext to the callback. `SecretBytes.fromUint8List` copies, so the facade wipes the unwrap buffer immediately after the copy and wipes the callback copy in a `finally`. The public named constructor is `PqKeystore(backend:, crypto:)`.
 
 ### 3. PqKeystoreCrypto (Wrap/Unwrap)
 
-Responsible for wrapping and unwrapping key material. `PqForgeKeystoreCrypto` calls pqforge 0.4.6 `wrapKeyWithPassphrase` and maps `PqWrappedKey` fields into `SealedRecord`; it does not serialize a `.pqf` or `.pqfs` content envelope. `SealedRecord` encodes wrapper parameters and ciphertext in PQKS framing. Parsing alone does not authenticate a record, and retrieval currently lacks a metadata-to-AAD consistency check.
+Responsible for wrapping and unwrapping key material. `PqForgeKeystoreCrypto` calls pqforge 0.4.13 `wrapKeyWithPassphrase` and maps `PqWrappedKey` fields into `SealedRecord`; it does not serialize a `.pqf` or `.pqfs` content envelope. `SealedRecord` encodes wrapper parameters and ciphertext in PQKS framing. Parsing alone does not authenticate a record. Before unwrap, `use` rejects a record whose id or canonical AAD does not match the stored metadata.
 
 ### 4. PqKeystoreBackend (Storage)
 
@@ -47,8 +47,8 @@ Handles the persistence of the sealed PQKS blobs.
 
 The intended architecture is layered, but the following are design goals, not verified current guarantees:
 
-1. **Inner wrapping**: A crypto provider is responsible for cryptographic protection. `StubKeystoreCrypto` is insecure. Authentication mode behavior depends on the adapter and is not uniform for every public unlock type.
-2. **Backend storage**: The backend stores encoded records. The native method channel is incomplete across targets. The file backend's unkeyed index checksum is not adversarial authentication.
+1. **Inner wrapping**: `PqForgeKeystoreCrypto` is the only crypto implementation in `lib/`. v1 unwraps with `PassphraseUnlock` only.
+2. **Backend storage**: The backend stores encoded records. The channel contract is implemented on all five targets; which of those have a passing contract suite is [`PLATFORM.md`](PLATFORM.md), not this diagram. The file backend has no index. Someone who can replace a record file can replace its AAD with it, so the facade's AAD check is a consistency check, not an authenticity claim.
 
 Do not infer hardware-backed protection, biometric enforcement, confidentiality under every configured mode, or cross-platform availability from this architecture diagram.
 
@@ -69,4 +69,4 @@ For threshold cryptography, `pqkeystore` is intended to manage individual *share
 
 * One share is stored per device.
 * The ceremony is expected to be managed externally by `pqthreshold`; end-to-end integration is not established.
-* `putShare` checks share kind and threshold metadata presence only. Full key reconstruction is not implemented by these helpers. See [ADR-0005](adr/0005-threshold-share-boundary.md).
+* `putShare` / `useShare` store and return one share. Structural metadata is checked (`1 <= t <= n`, 1-based index, non-empty scheme and ceremony ids). Share math and reconstruction are not implemented. See [ADR-0005](adr/0005-threshold-share-boundary.md).

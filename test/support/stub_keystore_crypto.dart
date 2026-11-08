@@ -8,16 +8,15 @@
 // ║                                                                    ║
 // ║  • MUST NEVER ship as production crypto.                           ║
 // ║  • MUST NEVER be used with real secret material.                   ║
-// ║  • Exists solely to validate backend/facade wiring without         ║
-// ║    requiring pqforge or native crypto dependencies.                ║
+// ║  • Lives under test/ so it cannot be imported by an application.   ║
+// ║  • Provides ZERO cryptographic security.                            ║
 // ║                                                                    ║
 // ║  See CONTINUE.md for real crypto integration via PqForgeKeystoreCrypto. ║
 // ╚══════════════════════════════════════════════════════════════════════╝
 
 import 'dart:typed_data';
 
-import '../api/unlock.dart';
-import 'keystore_crypto.dart';
+import 'package:pqkeystore/pqkeystore.dart';
 
 /// **NOT SECURE** — XOR-based stub for structure tests only.
 ///

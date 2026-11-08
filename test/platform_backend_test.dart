@@ -12,6 +12,7 @@ import 'package:pqkeystore/pqkeystore.dart';
 
 import 'contract/platform_contract_suite.dart';
 import 'contract/reference_native_store.dart';
+import 'support/stub_keystore_crypto.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -41,8 +41,20 @@ someone to do unnecessary or harmful work.
 
 ## Published status, verified against pub.dev
 
-Checked via the pub.dev API, not the repository docs. The two disagree, and the
-repository docs are the wrong ones.
+The table that used to sit here was the 2026-10 survey (merge `8bc0ef6`). It is
+not the current resolution. As of 2026-11-08 the lock is:
+
+| Package | Resolved | Note |
+| --- | --- | --- |
+| `pqforge` | 0.4.13 | Floor `^0.4.13`. Argon2id bounds are published. |
+| `zeroize` | 0.2.0 | `SecretBytes.fromUint8List` copies. |
+| `pqthreshold` | 1.1.0 | Requires Dart `^3.12.2`. Not imported by `lib/`. |
+| `pqcrypto` | 0.4.4 | Transitive through pqforge. |
+| `pqkeystore` | 0.1.0-dev.1 | `publish_to: none`. Not on pub.dev. |
+
+Rows below this heading are the **2026-10 historical survey** (merge `8bc0ef6`). They are not the tree this package resolves. The correction table above is the current resolution.
+
+## Historical survey (2026-10)
 
 | Package | Local checkout | On pub.dev | Consequence |
 | --- | --- | --- | --- |

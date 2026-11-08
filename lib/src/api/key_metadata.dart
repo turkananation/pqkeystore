@@ -2,7 +2,6 @@ import 'key_id.dart';
 import 'key_kind.dart';
 
 final class ThresholdMeta {
-
   const ThresholdMeta({
     required this.schemeId,
     required this.t,
@@ -48,9 +47,13 @@ final class ThresholdMeta {
   /// is refused before it is written rather than at reconstruction time.
   ///
   /// The bounds mirror `pqthreshold`'s own construction-time validation:
-  /// `t >= 1`, `n >= 1`, `t <= n`, `participantIndex` in `1..n`, and a
-  /// non-empty ceremony id.
+  /// non-empty `schemeId`, `t >= 1`, `n >= 1`, `t <= n`, `participantIndex`
+  /// in `1..n`, and a non-empty ceremony id. They say nothing about whether
+  /// the share bytes are a valid polynomial evaluation.
   String? validate() {
+    if (schemeId.isEmpty) {
+      return 'schemeId must not be empty';
+    }
     if (t < 1) {
       return 'threshold t must be at least 1, got $t';
     }
@@ -71,17 +74,16 @@ final class ThresholdMeta {
   }
 
   Map<String, dynamic> toJson() => {
-        'schemeId': schemeId,
-        't': t,
-        'n': n,
-        'participantIndex': participantIndex,
-        'ceremonyId': ceremonyId,
-        if (rosterHashHex != null) 'rosterHashHex': rosterHashHex,
-      };
+    'schemeId': schemeId,
+    't': t,
+    'n': n,
+    'participantIndex': participantIndex,
+    'ceremonyId': ceremonyId,
+    if (rosterHashHex != null) 'rosterHashHex': rosterHashHex,
+  };
 }
 
 final class KeyMetadata {
-
   const KeyMetadata({
     required this.id,
     required this.kind,
@@ -102,11 +104,17 @@ final class KeyMetadata {
       createdAt: DateTime.parse(json['createdAt'] as String),
       purpose: json['purpose'] as String?,
       version: json['version'] as int? ?? 1,
-      rotatedFrom: json['rotatedFrom'] != null ? KeyId(json['rotatedFrom'] as String) : null,
-      threshold: json['threshold'] != null
-          ? ThresholdMeta.fromJson(Map<String, dynamic>.from(json['threshold'] as Map))
+      rotatedFrom: json['rotatedFrom'] != null
+          ? KeyId(json['rotatedFrom'] as String)
           : null,
-      tags: json['tags'] != null ? Map<String, String>.from(json['tags'] as Map) : {},
+      threshold: json['threshold'] != null
+          ? ThresholdMeta.fromJson(
+              Map<String, dynamic>.from(json['threshold'] as Map),
+            )
+          : null,
+      tags: json['tags'] != null
+          ? Map<String, String>.from(json['tags'] as Map)
+          : {},
     );
   }
   final KeyId id;
@@ -120,14 +128,14 @@ final class KeyMetadata {
   final Map<String, String> tags;
 
   Map<String, dynamic> toJson() => {
-        'id': id.value,
-        'kind': kind.name,
-        'algorithm': algorithm,
-        'createdAt': createdAt.toIso8601String(),
-        if (purpose != null) 'purpose': purpose,
-        'version': version,
-        if (rotatedFrom != null) 'rotatedFrom': rotatedFrom!.value,
-        if (threshold != null) 'threshold': threshold!.toJson(),
-        if (tags.isNotEmpty) 'tags': tags,
-      };
+    'id': id.value,
+    'kind': kind.name,
+    'algorithm': algorithm,
+    'createdAt': createdAt.toIso8601String(),
+    if (purpose != null) 'purpose': purpose,
+    'version': version,
+    if (rotatedFrom != null) 'rotatedFrom': rotatedFrom!.value,
+    if (threshold != null) 'threshold': threshold!.toJson(),
+    if (tags.isNotEmpty) 'tags': tags,
+  };
 }

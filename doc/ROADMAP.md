@@ -104,9 +104,7 @@ hard-rejected by the facade with `PolicyError`. This version closes both gaps.
   levels.
 - **`PlatformUnlock` implemented.** Remove the facade's blanket rejection; a
   platform-unlocked record is unwrapped only after the OS releases it.
-- **`PassphraseThenPlatform` actually chains.** Today it is handled as
-  passphrase-only; it should run passphrase derivation *and* device
-  authentication, with `Cancelled` surfaced when the user cancels.
+- **`PassphraseThenPlatform` actually chains.** v1 rejects it with `PolicyError` rather than treating it as passphrase-only. This version should run passphrase derivation *and* device authentication, with `Cancelled` surfaced when the user cancels.
 - **Capability negotiation as a first-class API.** "Can this device enforce
   these options?" before write time. `UNSUPPORTED_OPTION` semantics stay:
   refuse, never ignore.
@@ -316,9 +314,9 @@ an earlier claim.
 
 ## Current verification baseline
 
-`tool/verify.sh` passes on Dart 3.13.4 / Flutter 3.47.5 — root and example
-resolution, `dart analyze`, and **135** package tests. CI run 37770096113:
-Dart, Linux, Windows, Android (API 26/28/35) and iOS (SwiftPM) green; macOS and
-iOS CocoaPods build, then fail fast with an explicit "no Apple development
-signing identity" error. The declared minimum SDK pair (Dart 3.12.0 / Flutter
-3.24.0) has not been executed.
+`tool/verify.sh` is the Dart gate. The approved minimum is Dart 3.12.2 /
+Flutter 3.44.2, because that is the oldest stable pair that resolves
+`pqthreshold` 1.1.0. Flutter 3.24.0 ships Dart 3.5.0 and cannot. CI also runs
+the current pin, Flutter 3.47.5. The command log is
+[`SDK_BASELINE.md`](SDK_BASELINE.md). macOS and iOS CocoaPods still stop on a
+missing Apple signing identity.

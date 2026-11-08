@@ -26,4 +26,4 @@ These are tracked as production work rather than confirmed behavioral defects:
 
 - Android user presence/biometrics and Windows Hello are not offered in contract v1; they are rejected explicitly (ADR-0009 open questions).
 - `PlatformStoreOptions` are now enforced or rejected natively, but how platform authentication relates to unlock semantics is unresolved. See [ADR-0002](adr/0002-platform-channel-contract.md) and [ADR-0004](adr/0004-unlock-and-secret-lifecycle.md).
-- Threshold helper methods enforce basic metadata policy but do not validate threshold parameters or demonstrate an end-to-end `pqthreshold` ceremony. See [ADR-0005](adr/0005-threshold-share-boundary.md) and TRK-008.
+- Threshold helpers enforce structural metadata (`ThresholdMeta.validate`) and refuse to unwrap a non-share. They do not validate share mathematics and there is no end-to-end `pqthreshold` ceremony. See [ADR-0005](adr/0005-threshold-share-boundary.md). TRK-008 is closed on that boundary.

@@ -5,7 +5,7 @@
 ## `pqcrypto` / `pqforge`
 
 * **Role**: These provide the actual cryptographic algorithms (post-quantum and classical).
-* **Integration**: `pqkeystore` does not implement post-quantum mathematics. `PqForgeKeystoreCrypto` adapts the `pqforge` wrapping API. The adapter exists, but dependency internals and security properties have not been independently audited in this project review.
+* **Integration**: `pqkeystore` does not implement post-quantum mathematics. `PqForgeKeystoreCrypto` adapts pqforge 0.4.13 `wrapKeyWithPassphrase` and maps `PqWrappedKey` into PQKS. Buffer ownership for that path is recorded in [`PROVIDER_LIFECYCLE.md`](PROVIDER_LIFECYCLE.md). Dependency internals have not had an independent security review.
 
 ### Format Boundary
 
@@ -14,12 +14,12 @@
 ## `pqthreshold`
 
 * **Role**: Manages distributed key generation and threshold signature ceremonies.
-* **Integration**: `pqthreshold` is the expected owner of threshold ceremonies and share mathematics. The current `putShare` checks the metadata kind and that threshold metadata exists; `useShare` delegates to `use`. An end-to-end signing or DKG integration has not been demonstrated, so the methods should be treated as custody helpers only.
+* **Integration**: `pqthreshold` owns ceremonies and share mathematics. `putShare` / `useShare` check structural metadata and move one share. They do not import `pqthreshold`, and no end-to-end signing or DKG test exists. Treat them as custody helpers only. See [ADR-0005](adr/0005-threshold-share-boundary.md).
 
 ## `zeroize`
 
 * **Role**: Provides secret-buffer utilities used by the facade.
-* **Integration**: `use` copies the unwrap result into `SecretBytes`, passes a separate callback copy, clears that callback buffer in `finally`, and disposes the wrapper. Ownership and disposal semantics for the original unwrap buffer have not been verified. This is not a guarantee against runtime copies, memory dumps, or callback retention.
+* **Integration**: `use` copies the unwrap result into `SecretBytes` (`fromUint8List` copies; it does not take ownership), wipes that source with `secureZero`, and wipes the callback copy in `finally`. The adapter wipes the two plaintext copies it allocates during wrap. The passphrase `String` and pqforge-internal temporaries are not wiped. See [`PROVIDER_LIFECYCLE.md`](PROVIDER_LIFECYCLE.md). This is not a guarantee against runtime copies, memory dumps, or callback retention.
 
 ## `swissarmyknife`
 
@@ -29,7 +29,7 @@
 ## `pqdga` / `pqtransport`
 
 * **Role**: Downstream ecosystem packages that may consume key material.
-* **Integration**: A downstream caller can use `use` as the preferred access path once the public constructor/API blocker is fixed. The caller must not retain or copy callback data unnecessarily; complete memory erasure is not guaranteed.
+* **Integration**: A downstream caller uses the public `PqKeystore(backend:, crypto:)` constructor and `use` as the access path. The caller must not retain or copy callback data unnecessarily; complete memory erasure is not guaranteed.
 
 ## Readiness
 

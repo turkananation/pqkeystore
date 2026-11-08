@@ -13,6 +13,7 @@ import 'package:zeroize/zeroize.dart';
 
 import '../backend/backend.dart';
 import '../crypto/canonical_aad.dart';
+import '../crypto/kdf_bounds.dart';
 import '../crypto/keystore_crypto.dart';
 import 'errors.dart';
 import 'key_id.dart';
@@ -42,22 +43,29 @@ final class PqKeystore {
 
   /// Store key material.
   ///
-  /// In format version 1, [unlock] must be [PassphraseUnlock] or
-  /// [PassphraseThenPlatform]. [PlatformUnlock] alone is rejected with
-  /// a [PolicyError].
+  /// v1 accepts only [PassphraseUnlock]. [PlatformUnlock] and
+  /// [PassphraseThenPlatform] return [PolicyError] and never reach the crypto
+  /// adapter. [PassphraseThenPlatform] is not treated as passphrase-only.
+  ///
+  /// A [KeyKind.thresholdShare] record is held to the same structural rules as
+  /// [putShare], so a direct [put] cannot bypass them. It still stores one
+  /// share and does not reconstruct a key.
   Future<KsResult<void>> put(
     KeyMetadata metadata,
     Uint8List plaintext,
     UnlockMethod unlock,
   ) async {
-    try {
-      // v1 policy: require passphrase-based unlock
-      if (unlock is PlatformUnlock) {
-        return const KsFailure(
-          PolicyError('v1 requires PassphraseUnlock or PassphraseThenPlatform'),
-        );
+    final policy = _unlockPolicy(unlock);
+    if (policy != null) {
+      return KsFailure(policy);
+    }
+    if (metadata.kind == KeyKind.thresholdShare) {
+      final problem = _shareProblem(metadata);
+      if (problem != null) {
+        return KsFailure(PolicyError(problem));
       }
-
+    }
+    try {
       final aad = canonicalAad(metadata);
       final wrapped = await _crypto.wrap(plaintext, aad, unlock);
 
@@ -87,13 +95,35 @@ final class PqKeystore {
   /// whose metadata was altered while the AAD was preserved is rejected with
   /// [FormatError] and unwrap is never invoked (ADR-0006, BUG-005).
   ///
+  /// Stored Argon2id parameters, when present, are range-checked before
+  /// unwrap. An out-of-range cost is [FormatError], not [CryptoError], and
+  /// the adapter is not called (ADR-0004, AGENTS.md rule 13).
+  ///
   /// The plaintext buffer is zeroed after [body] completes or throws.
   /// This is the **preferred** way to access key material.
   Future<KsResult<T>> use<T>(
     KeyId id,
     UnlockMethod unlock,
     Future<T> Function(Uint8List plaintext) body,
-  ) async {
+  ) {
+    return _open(id, unlock, body, shareOnly: false);
+  }
+
+  /// Shared open path for [use] and [useShare].
+  ///
+  /// [shareOnly] refuses any record that is not one structurally valid
+  /// threshold share, and it does so before unwrap. There is no path here
+  /// that combines shares or reconstructs a full key.
+  Future<KsResult<T>> _open<T>(
+    KeyId id,
+    UnlockMethod unlock,
+    Future<T> Function(Uint8List plaintext) body, {
+    required bool shareOnly,
+  }) async {
+    final policy = _unlockPolicy(unlock);
+    if (policy != null) {
+      return KsFailure(policy);
+    }
     try {
       final record = await _backend.getSealed(id);
       if (record == null) {
@@ -103,6 +133,31 @@ final class PqKeystore {
       final identityError = _validateRecordIdentity(id, record);
       if (identityError != null) {
         return KsFailure(identityError);
+      }
+
+      if (shareOnly) {
+        if (record.metadata.kind != KeyKind.thresholdShare) {
+          return const KsFailure(
+            PolicyError(
+              'useShare requires one stored thresholdShare; '
+              'this record is not a share and is not reconstructed',
+            ),
+          );
+        }
+        final problem = _shareProblem(record.metadata);
+        if (problem != null) {
+          return KsFailure(PolicyError('useShare: $problem'));
+        }
+      }
+
+      if (record.kdfParams != null) {
+        final kdfError = validateStoredArgon2idParams(
+          record.kdfParams,
+          saltRequired: true,
+        );
+        if (kdfError != null) {
+          return KsFailure(kdfError);
+        }
       }
 
       final plaintext = await _crypto.unwrap(
@@ -131,7 +186,6 @@ final class PqKeystore {
         final result = await body(callbackPlaintext);
         return KsSuccess(result);
       } finally {
-        // Clear the callback copy before disposing the secret buffer.
         secureZero(callbackPlaintext);
         secretPlaintext.dispose();
       }
@@ -140,6 +194,36 @@ final class PqKeystore {
     } catch (e) {
       return KsFailure(CryptoError(e.toString()));
     }
+  }
+
+  /// v1 inner unwrap is passphrase-only.
+  ///
+  /// [PassphraseThenPlatform] is rejected rather than silently unwrapped with
+  /// the passphrase half. Platform authentication is not an inner KDF factor
+  /// in this release.
+  static PolicyError? _unlockPolicy(UnlockMethod unlock) {
+    return switch (unlock) {
+      PassphraseUnlock() => null,
+      PlatformUnlock() => const PolicyError(
+        'v1 accepts only PassphraseUnlock; '
+        'PlatformUnlock is not an inner unwrap factor',
+      ),
+      PassphraseThenPlatform() => const PolicyError(
+        'v1 accepts only PassphraseUnlock; '
+        'PassphraseThenPlatform is not implemented and is not treated as '
+        'passphrase-only',
+      ),
+    };
+  }
+
+  /// Structural share rules. Returns null when [metadata] is one consistent
+  /// share. Does not inspect share bytes and does not reconstruct a key.
+  static String? _shareProblem(KeyMetadata metadata) {
+    final threshold = metadata.threshold;
+    if (threshold == null) {
+      return 'ThresholdMeta must be set';
+    }
+    return threshold.validate();
   }
 
   /// Verifies that [record] is bound to [id] and that its stored AAD is the
@@ -220,16 +304,16 @@ final class PqKeystore {
     }
   }
 
-  /// Store a threshold share.
+  /// Store one threshold share.
   ///
-  /// Enforces policy:
+  /// Structural rules, and nothing else:
   /// - [metadata.kind] must be [KeyKind.thresholdShare]
-  /// - [metadata.threshold] must be non-null
-  /// - that metadata must be internally consistent: `1 <= t <= n`,
-  ///   `participantIndex` in `1..n`, non-empty `ceremonyId`.
+  /// - [metadata.threshold] must be non-null and [ThresholdMeta.validate]
+  ///   must pass: non-empty `schemeId` and `ceremonyId`, `1 <= t <= n`,
+  ///   `participantIndex` in `1..n` (1-based, matching `pqthreshold.Share.index`)
   ///
-  /// Threshold shares are stored individually. Full reconstruction
-  /// requires explicit high-friction ceremony via `pqthreshold`.
+  /// Share mathematics, DKG, and full-key reconstruction belong to
+  /// `pqthreshold`. This method never combines shares.
   Future<KsResult<void>> putShare(
     KeyMetadata metadata,
     Uint8List shareData,
@@ -240,25 +324,31 @@ final class PqKeystore {
         PolicyError('putShare requires kind == KeyKind.thresholdShare'),
       );
     }
-    final threshold = metadata.threshold;
-    if (threshold == null) {
-      return const KsFailure(
-        PolicyError('putShare requires ThresholdMeta to be set'),
-      );
-    }
-    final problem = threshold.validate();
+    final problem = _shareProblem(metadata);
     if (problem != null) {
-      return KsFailure(PolicyError('putShare: $problem'));
+      return KsFailure(
+        PolicyError(
+          problem == 'ThresholdMeta must be set'
+              ? 'putShare requires ThresholdMeta to be set'
+              : 'putShare: $problem',
+        ),
+      );
     }
     return put(metadata, shareData, unlock);
   }
 
-  /// Use a threshold share — delegates to [use].
+  /// Unwrap one stored share and pass it to [body].
+  ///
+  /// Refuses a record that is not a structurally valid [KeyKind.thresholdShare]
+  /// before unwrap, including a full key stored under another kind. The
+  /// callback receives that one share's plaintext and no other. Cleanup
+  /// matches [use]: success and thrown callbacks both wipe the buffers this
+  /// package owns.
   Future<KsResult<T>> useShare<T>(
     KeyId id,
     UnlockMethod unlock,
     Future<T> Function(Uint8List) body,
-  ) async {
-    return use<T>(id, unlock, body);
+  ) {
+    return _open<T>(id, unlock, body, shareOnly: true);
   }
 }

@@ -5,8 +5,8 @@ version: 1.0.0+1
 
 environment:
   # Must match the package constraints in ../pubspec.yaml (TRK-001).
-  sdk: '>=3.12.0 <4.0.0'
-  flutter: '>=3.24.0'
+  sdk: '>=3.12.2 <4.0.0'
+  flutter: '>=3.44.2'
 
 dependencies:
   flutter:

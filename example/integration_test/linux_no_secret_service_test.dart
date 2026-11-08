@@ -34,7 +34,7 @@ void main() {
           algorithm: 'test',
           createdAt: DateTime.utc(2026),
         ),
-        wrapAlg: StubKeystoreCrypto.wrapAlgId,
+        wrapAlg: 'stub-xor-v1-NOT-SECURE',
         ciphertext: Uint8List.fromList([1]),
         aad: Uint8List.fromList([2]),
       );

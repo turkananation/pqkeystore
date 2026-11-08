@@ -603,5 +603,4 @@ before allocation; rule 10's regression tests still pass unmodified.
 - Not reducing peak memory. That needs a smaller `memoryPowerOf2`, which is a
   KDF policy decision for 0.7.0 with `pqforge`, not an isolate decision.
 - Not moving native platform-backend calls onto isolates.
-- Not requiring Dart 3.13/Flutter 3.47 (the versions this was verified on). The
-  floor stays 3.12/3.24, and TRK-001 still has to actually execute it once.
+- Not requiring Dart 3.13/Flutter 3.47. The approved floor is Dart 3.12.2 / Flutter 3.44.2, recorded in [`../SDK_BASELINE.md`](../SDK_BASELINE.md). Flutter 3.24.0 cannot resolve the package.

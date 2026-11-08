@@ -3,6 +3,8 @@
 - Status: Proposed
 - Date: 2026-10-05
 
+The resolved dependency is pqforge 0.4.13. The format split below is what the code does. This ADR stays Proposed because the migration policy for a future `PqWrappedKey` change is still an open question, not because PQKS and `.pqf` / `.pqfs` are the same thing.
+
 ## Context
 
 The project uses several similarly named formats with different jobs:
@@ -12,7 +14,7 @@ The project uses several similarly named formats with different jobs:
 - `pqforge`'s `PqEnvelope` is a recipient-oriented one-shot content-encryption envelope. Its binary frame is length-prefixed and carries `PQF1` as a field; `.pqf` is a file suffix convention, not the frame's raw leading magic bytes.
 - `pqforge`'s `PqStreamingEnvelope` is a distinct `PQFS` frame container for large/streamed content, with a signed/authenticated header and independently authenticated sequenced frames. `.pqfs` is its file suffix convention.
 
-The resolved `pqforge` dependency is 0.4.6. `PqForgeKeystoreCrypto` calls `wrapKeyWithPassphrase`, then maps fields from `PqWrappedKey` into a custom `SealedRecord`; it does not produce or consume `.pqf`/`.pqfs` envelopes and does not currently store `PqWrappedKey.toJson()` verbatim.
+The resolved `pqforge` dependency is 0.4.13. `PqForgeKeystoreCrypto` calls `wrapKeyWithPassphrase`, then maps fields from `PqWrappedKey` into a custom `SealedRecord`; it does not produce or consume `.pqf`/`.pqfs` envelopes and does not store `PqWrappedKey.toJson()` verbatim.
 
 ## Decision
 

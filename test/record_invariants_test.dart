@@ -16,6 +16,8 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pqkeystore/pqkeystore.dart';
 
+import 'support/stub_keystore_crypto.dart';
+
 /// Wraps [inner] and counts how often the facade reaches the crypto adapter.
 class _SpyCrypto implements PqKeystoreCrypto {
   _SpyCrypto(this.inner);

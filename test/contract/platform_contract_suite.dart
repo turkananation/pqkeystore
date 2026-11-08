@@ -18,6 +18,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pqkeystore/pqkeystore.dart';
 
+import '../support/stub_keystore_crypto.dart';
+
 const String _prefix = 'pqks-contract-test/';
 
 /// Defines the contract suite.

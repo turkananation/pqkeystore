@@ -46,6 +46,21 @@ Invariants enforced by the decoder: magic `PQKS`, known version, all length pref
 
 `wrapAlg` + `kdfParams` describe the crypto-provider payload (ADR-0007): for `PqForgeKeystoreCrypto` today it is `pqforge-argon2id-aes-256-gcm-v1`.
 
+### Argon2id costs inside `kdfParams`
+
+Checked before the KDF runs. A violation is `FormatError`, not `CryptoError`.
+
+| Field | Permitted | Notes |
+| --- | --- | --- |
+| `kdf` | `argon2id`, or absent | Any other id is rejected. Absent means argon2id. |
+| `aead` | `aes-256-gcm`, or absent | Any other id is rejected. |
+| `iterations` | `1..10`, or absent | Absent uses the adapter default (2), which is inside the window. |
+| `memoryPowerOf2` | `10..20`, or absent | `2^n` KiB. 10 = 1 MiB, 20 = 1 GiB. Default 16. |
+| `lanes` | `1..16`, or absent | Default 4. |
+| `salt` | base64, decoded length ≥ 16 | Stricter than pqforge's 8-byte provider floor. Required when `kdfParams` is present. |
+
+A present field that is not an int (for the numeric fields) is rejected rather than coerced. See [`PROVIDER_LIFECYCLE.md`](PROVIDER_LIFECYCLE.md).
+
 ## 2. File name and identity (all file backends)
 
 ```

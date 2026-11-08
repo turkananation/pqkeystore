@@ -6,8 +6,12 @@ tracker disagree, the tracker wins.
 
 ## Latest verification
 
-`tool/verify.sh` passes on Dart 3.13.4 / Flutter 3.47.5 — root and example
-dependency resolution, `dart analyze`, and **135** package tests.
+`tool/verify.sh` is the Dart gate. The approved minimum is Dart 3.12.2 /
+Flutter 3.44.2 (oldest stable pair that resolves `pqthreshold` 1.1.0).
+Flutter 3.24.0 ships Dart 3.5.0 and cannot resolve the package. The current
+local toolchain and the command log are in
+[`doc/SDK_BASELINE.md`](doc/SDK_BASELINE.md). CI pins Flutter 3.47.5 for the
+native jobs and also runs the minimum pair.
 
 CI run 37770096113 on merged `main`:
 
@@ -21,9 +25,9 @@ CI run 37770096113 on merged `main`:
 | iOS (CocoaPods) | build OK, gated on a signing identity |
 | macOS | build OK, gated on a signing identity |
 
-This verifies behaviour, not the declared minimum SDK pair (Dart 3.12.0 /
-Flutter 3.24.0 has never been executed here) and not any production security
-claim.
+This verifies behaviour, not any production security claim. The minimum pair
+is no longer "Dart 3.12.0 / Flutter 3.24.0"; that pair cannot resolve the
+package.
 
 ## What the platform-contract work delivered
 
@@ -41,28 +45,16 @@ found during that work were fixed on `main`:
 
 ## Open work, in the order the gates require
 
-1. **TRK-001 — minimum SDK baseline.** Run the declared floor
-   (Dart 3.12.0 / Flutter 3.24.0) once in CI and record the result, so the
-   floor is confirmed rather than asserted.
-2. **TRK-002 — architecture freeze.** ADR-0002 … ADR-0010 are implemented and
-   tested but still marked `Proposed`. A maintainer accepts them as written, or
-   defers them explicitly. Nothing else can be called final until this
-   happens.
+1. **TRK-001 — closed.** Approved minimum is Dart 3.12.2 / Flutter 3.44.2. Record: [`doc/SDK_BASELINE.md`](doc/SDK_BASELINE.md).
+2. **TRK-002 — architecture freeze.** ADR-0002 … ADR-0010 are implemented in part and still marked `Proposed` except ADR-0005. A maintainer accepts them as written, or defers them explicitly. This PR does not accept them.
 3. **Apple signing identity.** Provision `DEVELOPMENT_TEAM` plus a certificate
    in CI to unblock the macOS and iOS-CocoaPods legs. Both jobs already fail
    fast with an explicit error; no code change is needed.
-4. **TRK-005 — provider lifecycle evidence.** Record the pinned
-   `pqforge`/`zeroize` buffer ownership: which buffers are copied, owned,
-   disposed and safe to overwrite. The three remaining non-claims (GC copies,
-   the immutable passphrase `String`, `pqforge` internals) are documented in
-   [`CLAIM_BOUNDARY.md`](doc/CLAIM_BOUNDARY.md) and stay non-claims until this
-   exists.
-5. **TRK-008 — threshold boundary.** Tighten share metadata invariants
-   (`t`/`n` bounds) and keep ceremony interoperability unclaimed until there is
-   an end-to-end `pqthreshold` test.
-6. **TRK-011 / TRK-012 — release and review.** Publication policy, version
-   scheme, archive inspection, then an independent security review. No
-   production-security claim may be made before TRK-012 closes.
+4. **TRK-005 — closed.** Provider ownership, passphrase encoding, unlock policy, and KDF bounds are recorded in [`doc/PROVIDER_LIFECYCLE.md`](doc/PROVIDER_LIFECYCLE.md). The three non-claims (GC copies, the immutable passphrase `String`, unreachable `pqforge` temporaries) stay non-claims.
+5. **TRK-008 — closed.** Share metadata invariants are accepted in ADR-0005 and tested. Ceremony interoperability stays unclaimed until there is an end-to-end `pqthreshold` test.
+6. **TRK-010 — closed** as a documentation reconciliation against the code on this branch. Proposed ADRs are still Proposed. Plans under `doc/IMPLEMENTATION/` are not current behaviour.
+7. **TRK-011 — closed as a non-publication decision.** `publish_to: none`, no tag. A clean-tree dry-run validates an archive and does not upload; `pod spec lint` was not run. CI built the CocoaPods iOS target and then stopped before the contract suite. See [`doc/PUBLICATION.md`](doc/PUBLICATION.md). TRK-007 and TRK-009 stay open.
+8. **TRK-012 — independent security review.** No production-security claim may be made before this closes.
 
 ## Hard rules that are easy to break
 

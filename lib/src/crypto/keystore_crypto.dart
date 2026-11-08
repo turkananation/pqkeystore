@@ -10,9 +10,9 @@ import '../api/unlock.dart';
 /// and unwrap (decrypt) it back. The AAD (Additional Authenticated Data)
 /// binds the ciphertext to its associated metadata.
 ///
-/// Implementations:
-/// - [StubKeystoreCrypto] — XOR stub, **NOT SECURE**, structure tests only.
-/// - [PqForgeKeystoreCrypto] — uses pqforge with Argon2id + AES-256-GCM.
+/// The only implementation that ships in this package is
+/// [PqForgeKeystoreCrypto]. A fixture that does not need real cryptography
+/// belongs under `test/`, where it cannot be imported by an application.
 abstract interface class PqKeystoreCrypto {
   /// Wrap (encrypt) [plaintext] with the given [aad] and [unlock] method.
   ///
