@@ -4,8 +4,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-0.1.0--dev.1-orange.svg)](https://github.com/turkananation/pqkeystore/releases)
-[![Dart](https://img.shields.io/badge/Dart-%3E%3D3.12-blue.svg)](https://dart.dev)
-[![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.24-blue.svg)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-%3E%3D3.12.2-blue.svg)](https://dart.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-%3E%3D3.44.2-blue.svg)](https://flutter.dev)
 [![Platforms](https://img.shields.io/badge/platforms-Android%20%C2%B7%20iOS%20%C2%B7%20macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-lightgrey.svg)](#platform-support)
 
 ---
@@ -36,7 +36,7 @@ not audited and not claiming production security. What *is* backed by evidence:
 
 | Area | State |
 | --- | --- |
-| Dart facade, PQKS codec, memory/file backends | Implemented, 135 passing tests |
+| Dart facade, PQKS codec, memory/file backends | Implemented. Count and toolchain: [`doc/SDK_BASELINE.md`](doc/SDK_BASELINE.md) |
 | Five-platform channel contract v1 | Implemented on all five targets |
 | On-device contract suite | **Green** on Android (API 26/28/35), Windows, Linux, iOS (SwiftPM) |
 | macOS, iOS CocoaPods | Build; contract suite gated on an Apple signing identity |
@@ -311,7 +311,7 @@ The whole package is testable in pure Dart — no device, no emulator:
 
 ```sh
 tool/verify.sh              # root + example: pub get, analyze, test
-flutter test                 # 135 tests
+flutter test                 # count recorded in doc/SDK_BASELINE.md
 cd example/android && ./gradlew :pqkeystore:testDebugUnitTest
 ```
 

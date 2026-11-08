@@ -16,6 +16,8 @@ Architecture, API, platform behaviour and security claims for `pqkeystore`.
 | [`API.md`](API.md) | Public classes, methods and data structures. |
 | [`FORMATS.md`](FORMATS.md) | Every on-disk byte layout: PQKS, PQNA, PQNW, keychain item, Secret Service item, file store v1, tombstones. |
 | [`PROVIDER_LIFECYCLE.md`](PROVIDER_LIFECYCLE.md) | Pinned pqforge/zeroize buffer ownership, passphrase encoding, unlock policy, Argon2id bounds. |
+| [`SDK_BASELINE.md`](SDK_BASELINE.md) | Approved minimum and current toolchains, with the command log. |
+| [`PUBLICATION.md`](PUBLICATION.md) | Publication is not approved. `publish_to: none`. No tag. |
 | [`PLATFORM_CONTRACT.md`](PLATFORM_CONTRACT.md) | Normative native channel contract v1. |
 | [`PLATFORM.md`](PLATFORM.md) | Platform status matrix, enforceable options, integration requirements. |
 | [`INTEGRATION.md`](INTEGRATION.md) | How `pqkeystore` fits into the Yardenah stack (`pqforge`, `zeroize`, …). |
@@ -24,10 +26,9 @@ Architecture, API, platform behaviour and security claims for `pqkeystore`.
 
 ## Implementation plans
 
-Detailed, ordered, test-by-test plans for the next three releases. Read these
-before writing code for 0.2.0, 0.3.0 or 0.4.0 — each cites the current
-`file:line` state it is planning against, so a stale line number means a stale
-document.
+Detailed, ordered, test-by-test plans for later releases. They are plans.
+Where they disagree with the reference documents above, the reference documents
+win. A stale `file:line` in a plan does not describe the current tree.
 
 | Document | Covers |
 | --- | --- |

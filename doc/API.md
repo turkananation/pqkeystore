@@ -1,6 +1,6 @@
 # API Reference
 
-This reference describes the API currently exported by `package:pqkeystore/pqkeystore.dart`. It is not a promise that every backend works in production. Public construction with `PqKeystore(backend: ..., crypto: ...)` compiles and is covered by the facade tests. The example app itself remains simulated; see TRK-013 in [`TRACKER.md`](TRACKER.md).
+This reference describes the API currently exported by `package:pqkeystore/pqkeystore.dart`. It is not a promise that every backend works in production. Public construction with `PqKeystore(backend: ..., crypto: ...)` compiles and is covered by the facade tests. The example app is a real package consumer (TRK-013); it is not a simulated keystore.
 
 ## `PqKeystore`
 

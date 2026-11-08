@@ -7,13 +7,13 @@ This document describes the threat model to use when evaluating `pqkeystore`; it
 We consider the following adversaries and capabilities:
 
 1. **Passive Storage Access**: An attacker acquires stored application data.
-    * *Intended mitigation*: Wrap key material before persistence. Actual protection depends on the selected crypto adapter, unlock mode, and backend; current native support is incomplete.
+    * *Intended mitigation*: Wrap key material before persistence. Actual protection depends on the selected crypto adapter, unlock mode, and backend. Contract-suite evidence is per OS in [`PLATFORM.md`](PLATFORM.md). That evidence is not a production-security claim.
 2. **App Compromise (Non-Root)**: Malware with access to the app process or its files attempts to read records or plaintext.
     * *Boundary*: This package does not prevent compromise of the application process. Platform isolation and access-control policies require implementation and verification on each OS.
 3. **Rooted/Jailbroken Device**: An attacker has elevated privileges and can read any file or query the OS keystore directly.
     * *Boundary*: No protection against a compromised OS is claimed. Do not assume a specific algorithm, hardware-backed key, or passphrase flow without verifying the configured adapter and platform.
 4. **Memory Scraping**: An attacker dumps the application's RAM to find keys.
-    * *Boundary*: `use` limits the intended access scope and clears a callback copy, but the caller may retain copies and complete process-memory erasure is not established.
+    * *Boundary*: `use` / `useShare` wipe the buffers this package owns. The caller may retain copies. Complete process-memory erasure is not claimed ([`CLAIM_BOUNDARY.md`](CLAIM_BOUNDARY.md)).
 
 ## Trust Boundaries
 
@@ -26,6 +26,6 @@ We consider the following adversaries and capabilities:
 Our core philosophy is that no single layer should be relied upon exclusively:
 
 1. **Transient Memory**: `use` is the preferred access pattern; copies and full erasure are not controlled.
-2. **Inner Cryptography**: The crypto adapter is responsible for wrapping; the insecure stub must never be used with real secrets.
-3. **Outer Storage**: Platform storage is a goal, not a verified guarantee across registered targets.
+2. **Inner Cryptography**: The only crypto adapter in the package is `PqForgeKeystoreCrypto`. The XOR fixture is not exported. It must not be used with real secrets.
+3. **Outer Storage**: Some targets have contract-suite evidence ([`PLATFORM.md`](PLATFORM.md)). That is not a production guarantee, and macOS plus iOS CocoaPods are still not a pass.
 4. **Threshold Custody**: Share helper APIs exist, but they do not validate share mathematics or prove end-to-end threshold security.

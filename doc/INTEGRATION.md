@@ -5,7 +5,7 @@
 ## `pqcrypto` / `pqforge`
 
 * **Role**: These provide the actual cryptographic algorithms (post-quantum and classical).
-* **Integration**: `pqkeystore` does not implement post-quantum mathematics. `PqForgeKeystoreCrypto` adapts the `pqforge` wrapping API. The adapter exists, but dependency internals and security properties have not been independently audited in this project review.
+* **Integration**: `pqkeystore` does not implement post-quantum mathematics. `PqForgeKeystoreCrypto` adapts pqforge 0.4.13 `wrapKeyWithPassphrase` and maps `PqWrappedKey` into PQKS. Buffer ownership for that path is recorded in [`PROVIDER_LIFECYCLE.md`](PROVIDER_LIFECYCLE.md). Dependency internals have not had an independent security review.
 
 ### Format Boundary
 
@@ -29,7 +29,7 @@
 ## `pqdga` / `pqtransport`
 
 * **Role**: Downstream ecosystem packages that may consume key material.
-* **Integration**: A downstream caller can use `use` as the preferred access path once the public constructor/API blocker is fixed. The caller must not retain or copy callback data unnecessarily; complete memory erasure is not guaranteed.
+* **Integration**: A downstream caller uses the public `PqKeystore(backend:, crypto:)` constructor and `use` as the access path. The caller must not retain or copy callback data unnecessarily; complete memory erasure is not guaranteed.
 
 ## Readiness
 
