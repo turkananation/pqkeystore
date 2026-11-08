@@ -44,9 +44,9 @@ Future<KsResult<T>> useShare<T>(
 )
 ```
 
-`use` is the preferred access path. Its callback buffer is cleared in a `finally` block and its `SecretBytes` wrapper is disposed. The original unwrap buffer's ownership and complete memory-erasure behavior have not been verified; callers should not retain or copy callback data.
+`use` is the preferred access path. Its callback buffer is cleared in a `finally` block and its `SecretBytes` wrapper is disposed. The original unwrap buffer is wiped immediately after it is copied. See [`PROVIDER_LIFECYCLE.md`](PROVIDER_LIFECYCLE.md) for which copies that does and does not cover. Callers should not retain or copy callback data.
 
-`putShare` checks that `metadata.kind` is `KeyKind.thresholdShare` and that threshold metadata is present. It does not validate threshold values or perform a `pqthreshold` ceremony. `useShare` delegates to `use`.
+`putShare` stores one share. It requires `KeyKind.thresholdShare` and structural threshold metadata (`schemeId`, `ceremonyId`, `1 <= t <= n`, 1-based `participantIndex` in `1..n`) and returns `PolicyError` before wrap otherwise. `useShare` unwraps that one share and refuses any other kind, including a full key, before unwrap. Neither method reconstructs a key or runs a `pqthreshold` ceremony.
 
 ## Data Types
 
@@ -55,13 +55,13 @@ Future<KsResult<T>> useShare<T>(
 * `KeyMetadata` includes `id`, `kind`, `algorithm`, `createdAt`, and optional `purpose`, `version`, `rotatedFrom`, `threshold`, and `tags`.
 * `ThresholdMeta` includes `schemeId`, `t`, `n`, `participantIndex`, `ceremonyId`, and optional `rosterHashHex`.
   `participantIndex` is **1-based**, matching `pqthreshold.Share.index`. `putShare`
-  validates `1 <= t <= n`, `participantIndex` in `1..n`, and a non-empty
-  `ceremonyId`, returning `PolicyError` before the backend is touched.
+  validates a non-empty `schemeId` and `ceremonyId`, `1 <= t <= n`, and
+  `participantIndex` in `1..n`, returning `PolicyError` before wrap.
 * `SealedRecord` is the versioned PQKS record persisted by a backend. PQKS serializes metadata in cleartext; deployments should treat purpose, tags, threshold details, and identifiers as potentially sensitive. Backend protection varies.
 
 ## Unlock Types
 
-`UnlockMethod` is sealed and currently has `PassphraseUnlock(Uint8List passphrase)`, `PlatformUnlock()`, and `PassphraseThenPlatform(Uint8List passphrase)`. `PqKeystore.put` rejects `PlatformUnlock` for v1. Platform authentication behavior for the other types is unresolved; see [ADR-0004](adr/0004-unlock-and-secret-lifecycle.md). Do not infer biometric enforcement from the type names.
+`UnlockMethod` is sealed: `PassphraseUnlock(Uint8List passphrase)`, `PlatformUnlock()`, and `PassphraseThenPlatform(Uint8List passphrase)`. v1 accepts only `PassphraseUnlock` on `put`, `use`, `putShare`, and `useShare`. The other two return `PolicyError` and are not unwrapped. `PassphraseThenPlatform` is not a synonym for `PassphraseUnlock`. Passphrase bytes are `String.fromCharCodes`'d and then UTF-8-encoded by pqforge; bytes above 0x7F expand. See [ADR-0004](adr/0004-unlock-and-secret-lifecycle.md) and [`PROVIDER_LIFECYCLE.md`](PROVIDER_LIFECYCLE.md). Do not infer biometric enforcement from the type names.
 
 ## Platform Backend
 

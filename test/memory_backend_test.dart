@@ -10,6 +10,8 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pqkeystore/pqkeystore.dart';
 
+import 'support/stub_keystore_crypto.dart';
+
 void main() {
   late PqKeystore keystore;
   late MemoryKeystoreBackend backend;

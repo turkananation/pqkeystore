@@ -18,6 +18,5 @@ This example app demonstrates the core lifecycle of a key using the `pqkeystore`
 > purposes, and only the *length* of the unwrapped plaintext is displayed. The
 > storage backend is the real platform backend (AndroidKeyStore, the Apple
 > keychain, DPAPI, or the Secret Service) and the wrapping adapter is
-> `PqForgeKeystoreCrypto`; `StubKeystoreCrypto` is **NOT SECURE** and is never
-> used on this path. Do not treat this example as a complete application
+> `PqForgeKeystoreCrypto`. The package does not export a stub cipher. Do not treat this example as a complete application
 > key-generation and passphrase policy.

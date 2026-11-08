@@ -10,10 +10,10 @@ If you believe you have found a security vulnerability in `pqkeystore`, please r
 
 The package is not currently production-ready. A `PqForgeKeystoreCrypto` adapter exists, but its provider security properties and the complete platform storage system are not independently verified. Native backends implement platform channel contract v1 on all five targets, but only Linux has on-device evidence so far (see `doc/PLATFORM.md`). Do not assume biometric enforcement, hardware backing, or cross-platform OS isolation.
 
-See [`doc/CLAIM_BOUNDARY.md`](doc/CLAIM_BOUNDARY.md) for current claims and non-claims and [`doc/TRACKER.md`](doc/TRACKER.md) for release gates. The stub crypto implementation provides no security and must never be used with real key material.
+See [`doc/CLAIM_BOUNDARY.md`](doc/CLAIM_BOUNDARY.md) for current claims and non-claims and [`doc/TRACKER.md`](doc/TRACKER.md) for release gates. The test-only XOR fixture is not part of the published library and provides no security.
 
 ## Critical Warnings
 
-* **`StubKeystoreCrypto` Is Not Secure:** The stub is for structural tests only and provides **NO SECURITY GUARANTEES**. Never use it with real secrets. Presence of `PqForgeKeystoreCrypto` does not itself establish production readiness.
+* **No test crypto in the package:** `lib/` exports `PqForgeKeystoreCrypto` only. The XOR fixture under `test/support/` provides **NO SECURITY GUARANTEES** and must never be moved back into `lib/` or used with real secrets. Presence of the real adapter does not establish production readiness.
 * **Secrets in Logs:** The package must never print cryptographic keys, passwords, or sensitive material to standard output, logs, or error messages. Report any leakage as a security vulnerability.
 * **Keystore Files (`.pqks`):** Never commit `.pqks` files containing real key material, passphrases, or shares to version control.

@@ -5,9 +5,8 @@
 /// This is the barrel export file — import `package:pqkeystore/pqkeystore.dart`
 /// to access the full public API.
 ///
-/// **WARNING**: `StubKeystoreCrypto` is **NOT SECURE** and must never be used
-/// in production. It exists solely for structural testing without device
-/// dependencies.
+/// Cryptography ships only as [PqForgeKeystoreCrypto]. There is no insecure
+/// stub on this import path.
 library;
 
 export 'src/api/errors.dart';
@@ -31,4 +30,3 @@ export 'src/backend/platform_options.dart';
 export 'src/crypto/canonical_aad.dart';
 export 'src/crypto/keystore_crypto.dart';
 export 'src/crypto/pq_forge_keystore_crypto.dart';
-export 'src/crypto/stub_keystore_crypto.dart';

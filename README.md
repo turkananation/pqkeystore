@@ -51,9 +51,9 @@ erasure, hardware backing, per-application isolation — this README says so
 rather than implying otherwise.
 
 > [!CAUTION]
-> **Not production-ready, and it tells you so.** `StubKeystoreCrypto` is
-> **NOT SECURE** — it is an XOR stub for structural tests and must never touch
-> real key material. `PqForgeKeystoreCrypto` is the real adapter. No
+> **Not production-ready, and it tells you so.** The only crypto adapter in
+> the package is `PqForgeKeystoreCrypto`. An XOR fixture used by tests lives
+> under `test/support/` and is not importable from the public API. No
 > independent security review has been performed.
 
 ---
@@ -245,8 +245,7 @@ item, the Secret Service item, file store v1, tombstones:
 │      wrap / unwrap      │  Memory │ File │ Platform    │
 │                         │       │         │            │
 │  PqForgeKeystoreCrypto  │         │    Fallback (opt-in)│
-│  StubKeystoreCrypto     │         │         │          │
-│  ⚠ NOT SECURE           │         │         │          │
+│  (only adapter in lib/) │         │         │          │
 ├─────────────────────────┴──────────────────────────────┤
 │      Native storage — one opaque PQKS blob per ID       │
 │  AndroidKeyStore · Apple keychain · DPAPI · Secret Svc │

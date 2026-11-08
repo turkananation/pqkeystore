@@ -207,26 +207,26 @@ packages:
     dependency: transitive
     description:
       name: pqcrypto
-      sha256: e9a420fe70b03a862b71ea8a1e70976d1d64ca647bfba58bf1acc3e727cb24fe
+      sha256: "1efc05e3a2c61d0f061e2b512207d1447b22bdad91f517ca91e6fac0df0f5136"
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.2"
+    version: "0.4.4"
   pqforge:
     dependency: "direct main"
     description:
       name: pqforge
-      sha256: f78a4d2c0a9bac9ff6ee3df1621aaf74961a221e63ea24505a8a1da59b62ef59
+      sha256: ab9b04143d414547c99535411e631d751537b6a29268f1a18fb4c9d306b75efa
       url: "https://pub.dev"
     source: hosted
-    version: "0.4.6"
+    version: "0.4.13"
   pqthreshold:
     dependency: "direct main"
     description:
       name: pqthreshold
-      sha256: "230697922877e93592b9492e878f0886a8d4c0807ebeca8152f1bb597f40e76f"
+      sha256: a9ade6f4cc8d260a4693b4778a1584c9baed01e1a3c69e11decf64654c191915
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.1"
+    version: "1.1.0"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -324,10 +324,10 @@ packages:
     dependency: "direct main"
     description:
       name: zeroize
-      sha256: d3932b6bdfa89ee76d4a35cea5f606b77ff0accd00e005aef024baa9f6692524
+      sha256: "00c564b2371fbd690e14b42df23eb87a72f0a43dfa6093ac9fe69ae376bf2f8f"
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.0"
+    version: "0.2.0"
 sdks:
   dart: ">=3.12.2 <4.0.0"
   flutter: ">=3.24.0"

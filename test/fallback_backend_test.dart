@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pqkeystore/pqkeystore.dart';
 
 import 'contract/reference_native_store.dart';
+import 'support/stub_keystore_crypto.dart';
 
 SealedRecord record(String id, {List<int> body = const [1]}) => SealedRecord(
       metadata: KeyMetadata(

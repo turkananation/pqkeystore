@@ -20,6 +20,8 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pqkeystore/pqkeystore.dart';
 
+import 'support/stub_keystore_crypto.dart';
+
 /// A crypto adapter that hands back a *tracked* buffer so a test can prove the
 /// facade wipes the exact instance it produced, not merely some equal buffer.
 class _TrackedCrypto implements PqKeystoreCrypto {

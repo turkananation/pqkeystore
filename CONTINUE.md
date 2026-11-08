@@ -51,18 +51,9 @@ found during that work were fixed on `main`:
 3. **Apple signing identity.** Provision `DEVELOPMENT_TEAM` plus a certificate
    in CI to unblock the macOS and iOS-CocoaPods legs. Both jobs already fail
    fast with an explicit error; no code change is needed.
-4. **TRK-005 — provider lifecycle evidence.** Record the pinned
-   `pqforge`/`zeroize` buffer ownership: which buffers are copied, owned,
-   disposed and safe to overwrite. The three remaining non-claims (GC copies,
-   the immutable passphrase `String`, `pqforge` internals) are documented in
-   [`CLAIM_BOUNDARY.md`](doc/CLAIM_BOUNDARY.md) and stay non-claims until this
-   exists.
-5. **TRK-008 — threshold boundary.** Tighten share metadata invariants
-   (`t`/`n` bounds) and keep ceremony interoperability unclaimed until there is
-   an end-to-end `pqthreshold` test.
-6. **TRK-011 / TRK-012 — release and review.** Publication policy, version
-   scheme, archive inspection, then an independent security review. No
-   production-security claim may be made before TRK-012 closes.
+4. **TRK-005 — closed.** Provider ownership, passphrase encoding, unlock policy, and KDF bounds are recorded in [`doc/PROVIDER_LIFECYCLE.md`](doc/PROVIDER_LIFECYCLE.md). The three non-claims (GC copies, the immutable passphrase `String`, unreachable `pqforge` temporaries) stay non-claims.
+5. **TRK-008 — closed.** Share metadata invariants are accepted in ADR-0005 and tested. Ceremony interoperability stays unclaimed until there is an end-to-end `pqthreshold` test.
+6. **TRK-011 / TRK-012 — release and review.** Publication policy, version scheme, archive inspection, then an independent security review. No production-security claim may be made before TRK-012 closes.
 
 ## Hard rules that are easy to break
 

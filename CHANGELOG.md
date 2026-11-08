@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+* **Breaking:** v1 accepts only `PassphraseUnlock`. `PlatformUnlock` and `PassphraseThenPlatform` return `PolicyError` and are not unwrapped. `PassphraseThenPlatform` is not treated as passphrase-only.
+* **Breaking:** `StubKeystoreCrypto` is no longer exported. The XOR fixture lives at `test/support/stub_keystore_crypto.dart` and is not part of the package API.
+* Argon2id costs in a stored record are checked before unwrap (`iterations` 1..10, `memoryPowerOf2` 10..20, `lanes` 1..16, salt ≥ 16). A violation is `FormatError`. Evidence and the passphrase-encoding contract: `doc/PROVIDER_LIFECYCLE.md`.
+* `PqForgeKeystoreCrypto.wrap` wipes the two package-owned plaintext copies it allocates and does not wipe the caller's buffer.
+* **Breaking (behavioural):** `useShare` unwraps only a structurally valid `thresholdShare`. Any other record, including a full key, is `PolicyError` and is not unwrapped. `put` of a `thresholdShare` uses the same metadata rules as `putShare`, including a non-empty `schemeId`. No API reconstructs a key. ADR-0005 is accepted for that boundary; ceremony interoperability is not claimed.
+
 * **Breaking:** Platform channel contract v1 (`doc/PLATFORM_CONTRACT.md`):
   - Removed `putJson`/`getJson` and the `__meta__` metadata sidecar. `list()` filters on decoded PQKS metadata, and `__meta__`-prefixed IDs are now ordinary IDs (BUG-010).
   - Arguments are `id`/`data`/`options`; `delete` returns a bool; `listIds` is implemented on every platform (BUG-002/003/004).

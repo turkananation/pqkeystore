@@ -47,7 +47,7 @@ Handles the persistence of the sealed PQKS blobs.
 
 The intended architecture is layered, but the following are design goals, not verified current guarantees:
 
-1. **Inner wrapping**: A crypto provider is responsible for cryptographic protection. `StubKeystoreCrypto` is insecure. Authentication mode behavior depends on the adapter and is not uniform for every public unlock type.
+1. **Inner wrapping**: `PqForgeKeystoreCrypto` is the only crypto implementation in `lib/`. v1 unwraps with `PassphraseUnlock` only.
 2. **Backend storage**: The backend stores encoded records. The native method channel is incomplete across targets. The file backend's unkeyed index checksum is not adversarial authentication.
 
 Do not infer hardware-backed protection, biometric enforcement, confidentiality under every configured mode, or cross-platform availability from this architecture diagram.
@@ -69,4 +69,4 @@ For threshold cryptography, `pqkeystore` is intended to manage individual *share
 
 * One share is stored per device.
 * The ceremony is expected to be managed externally by `pqthreshold`; end-to-end integration is not established.
-* `putShare` checks share kind and threshold metadata presence only. Full key reconstruction is not implemented by these helpers. See [ADR-0005](adr/0005-threshold-share-boundary.md).
+* `putShare` / `useShare` store and return one share. Structural metadata is checked (`1 <= t <= n`, 1-based index, non-empty scheme and ceremony ids). Share math and reconstruction are not implemented. See [ADR-0005](adr/0005-threshold-share-boundary.md).

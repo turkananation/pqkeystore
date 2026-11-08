@@ -15,6 +15,7 @@ Architecture, API, platform behaviour and security claims for `pqkeystore`.
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Component layering and data flow. |
 | [`API.md`](API.md) | Public classes, methods and data structures. |
 | [`FORMATS.md`](FORMATS.md) | Every on-disk byte layout: PQKS, PQNA, PQNW, keychain item, Secret Service item, file store v1, tombstones. |
+| [`PROVIDER_LIFECYCLE.md`](PROVIDER_LIFECYCLE.md) | Pinned pqforge/zeroize buffer ownership, passphrase encoding, unlock policy, Argon2id bounds. |
 | [`PLATFORM_CONTRACT.md`](PLATFORM_CONTRACT.md) | Normative native channel contract v1. |
 | [`PLATFORM.md`](PLATFORM.md) | Platform status matrix, enforceable options, integration requirements. |
 | [`INTEGRATION.md`](INTEGRATION.md) | How `pqkeystore` fits into the Yardenah stack (`pqforge`, `zeroize`, …). |

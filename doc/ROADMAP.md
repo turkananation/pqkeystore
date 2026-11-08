@@ -104,9 +104,7 @@ hard-rejected by the facade with `PolicyError`. This version closes both gaps.
   levels.
 - **`PlatformUnlock` implemented.** Remove the facade's blanket rejection; a
   platform-unlocked record is unwrapped only after the OS releases it.
-- **`PassphraseThenPlatform` actually chains.** Today it is handled as
-  passphrase-only; it should run passphrase derivation *and* device
-  authentication, with `Cancelled` surfaced when the user cancels.
+- **`PassphraseThenPlatform` actually chains.** v1 rejects it with `PolicyError` rather than treating it as passphrase-only. This version should run passphrase derivation *and* device authentication, with `Cancelled` surfaced when the user cancels.
 - **Capability negotiation as a first-class API.** "Can this device enforce
   these options?" before write time. `UNSUPPORTED_OPTION` semantics stay:
   refuse, never ignore.
